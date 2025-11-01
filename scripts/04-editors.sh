@@ -48,8 +48,39 @@ main() {
     fi
     
     # Cursor
-    if command -v cursor &> /dev/null || dpkg -l 2>/dev/null | grep -q "^ii.*cursor"; then
-        print_info "Cursor already installed ($(cursor --version 2>/dev/null || echo 'installed'))"
+    # Check if Cursor editor is installed (be specific - avoid false positives from system cursor packages)
+    # First check if the cursor package is installed via dpkg (most reliable)
+    CURSOR_PACKAGE_INSTALLED=false
+    if dpkg -l cursor 2>/dev/null | grep -qE "^ii[[:space:]]+cursor[[:space:]]"; then
+        CURSOR_PACKAGE_INSTALLED=true
+    fi
+    
+    # Check if cursor command exists
+    CURSOR_CMD_EXISTS=false
+    if command -v cursor &> /dev/null 2>&1; then
+        CURSOR_CMD=$(command -v cursor)
+        # If it's a real file (not just an alias), it's installed
+        if [[ -f "$CURSOR_CMD" ]] && [[ -x "$CURSOR_CMD" ]]; then
+            CURSOR_CMD_EXISTS=true
+        # If it's an alias but package is installed, that's OK
+        elif [[ "$CURSOR_PACKAGE_INSTALLED" == "true" ]]; then
+            CURSOR_CMD_EXISTS=true
+        fi
+    fi
+    
+    # Cursor is considered installed if package is installed OR command exists as executable
+    if [[ "$CURSOR_PACKAGE_INSTALLED" == "true" ]] || [[ "$CURSOR_CMD_EXISTS" == "true" ]]; then
+        if command -v cursor &> /dev/null 2>&1; then
+            CURSOR_VERSION=$(cursor --version 2>/dev/null | head -1 || echo "")
+            if [[ -n "$CURSOR_VERSION" ]]; then
+                print_info "Cursor already installed ($CURSOR_VERSION)"
+            else
+                print_info "Cursor already installed"
+            fi
+        elif [[ "$CURSOR_PACKAGE_INSTALLED" == "true" ]]; then
+            print_info "Cursor package installed (command may not be in PATH yet)"
+            print_info "Try restarting your terminal or run: export PATH=\"/usr/bin:\$PATH\""
+        fi
     else
         print_info "Installing Cursor..."
         
