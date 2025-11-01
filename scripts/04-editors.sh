@@ -96,29 +96,49 @@ main() {
         
         print_info "Downloading Cursor for ${ARCH}..."
         
-        # Try to download Cursor .deb package
-        # The official downloader endpoint redirects to the latest .deb file
+        # Try to download Cursor .deb package using official download methods
+        # Based on https://cursor.com/downloads and official API
         DOWNLOADED=false
         
-        # Method 1: Try the official downloader endpoint (most common)
-        if safe_curl_download_with_cache "https://downloader.cursor.sh/linux/deb" "$CURSOR_TEMP" 3 300 30; then
-            # Verify it's a valid file (at least 1MB, which is reasonable for a .deb)
-            if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]; then
-                DOWNLOADED=true
+        # Determine architecture for download URL
+        local download_arch="amd64"
+        if [[ "$ARCH" == "arm64" ]] || [[ "$ARCH" == "aarch64" ]]; then
+            download_arch="arm64"
+        fi
+        
+        # Method 1: Try official API endpoint (using version 2.0 for latest)
+        # API format: https://api2.cursor.sh/updates/download/golden/linux-x64-deb/cursor/2.0
+        if [[ "$download_arch" == "amd64" ]]; then
+            if safe_curl_download_with_cache "https://api2.cursor.sh/updates/download/golden/linux-x64-deb/cursor/2.0" "$CURSOR_TEMP" 3 300 30; then
+                # Verify it's a valid .deb file (at least 1MB)
+                if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]; then
+                    DOWNLOADED=true
+                fi
+            fi
+        elif [[ "$download_arch" == "arm64" ]]; then
+            if safe_curl_download_with_cache "https://api2.cursor.sh/updates/download/golden/linux-arm64-deb/cursor/2.0" "$CURSOR_TEMP" 3 300 30; then
+                if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]; then
+                    DOWNLOADED=true
+                fi
             fi
         fi
         
-        # Method 2: If first method failed, try direct architecture-specific URL
-        if [[ "$DOWNLOADED" == "false" ]] && [[ "$ARCH" == "amd64" ]]; then
-            print_info "Trying alternative download URL..."
+        # Method 2: If API method failed, try direct download from downloads.cursor.com
+        # Fallback to known stable version link (may be updated periodically)
+        if [[ "$DOWNLOADED" == "false" ]] && [[ "$download_arch" == "amd64" ]]; then
+            print_info "Trying alternative download URL (direct link)..."
             rm -f "$CURSOR_TEMP"
-            if safe_curl_download_with_cache "https://downloader.cursor.sh/linux/appImage/x64" "$CURSOR_TEMP" 3 300 30; then
-                # Check if file is a .deb (AppImage endpoint might return .deb or .AppImage)
-                if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && (file "$CURSOR_TEMP" 2>/dev/null | grep -q "Debian" || [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]); then
+            if safe_curl_download_with_cache "https://downloads.cursor.com/production/45fd70f3fe72037444ba35c9e51ce86a1977ac11/linux/x64/deb/amd64/deb/cursor_2.0.34_amd64.deb" "$CURSOR_TEMP" 3 300 30; then
+                if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]; then
                     DOWNLOADED=true
-                else
-                    # If it's an AppImage, we can't use it here, remove it
-                    rm -f "$CURSOR_TEMP"
+                fi
+            fi
+        elif [[ "$DOWNLOADED" == "false" ]] && [[ "$download_arch" == "arm64" ]]; then
+            print_info "Trying alternative download URL (direct link)..."
+            rm -f "$CURSOR_TEMP"
+            if safe_curl_download_with_cache "https://downloads.cursor.com/production/45fd70f3fe72037444ba35c9e51ce86a1977ac11/linux/arm64/deb/arm64/deb/cursor_2.0.34_arm64.deb" "$CURSOR_TEMP" 3 300 30; then
+                if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]; then
+                    DOWNLOADED=true
                 fi
             fi
         fi

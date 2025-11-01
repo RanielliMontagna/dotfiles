@@ -266,13 +266,16 @@ fi
 **Source**:
 
 - VS Code: Microsoft repository
-- Cursor: Official Cursor website (downloader.cursor.sh) - **now uses `safe_curl_download()` with timeout and retry**
+- Cursor: Official Cursor API (api2.cursor.sh) - **Fixed: now uses official API endpoint instead of obsolete downloader.cursor.sh**
 
 **Note**: This script always runs (not optional) as both editors are essential for development.
 
-**Improvements**: 
+**Improvements**:
+
 - Uses `safe_curl_download_with_cache()` from `common.sh` for reliable downloads with automatic retries and caching
 - Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
+- **Fixed download URLs**: Now uses official API (`api2.cursor.sh`) and direct links (`downloads.cursor.com`) instead of obsolete `downloader.cursor.sh` domain
+- Supports both amd64 and arm64 architectures
 
 ---
 
@@ -333,6 +336,7 @@ fi
 **Note**: This script always runs (not optional) as Java is essential for development.
 
 **Improvements**:
+
 - **Disk space check** before installation (requires ~2GB for 4 Java versions)
 - **Progress indicators** during Java version installation (`[X/4] Installing Java...`)
 - Uses `common.sh` functions for consistent behavior
@@ -369,7 +373,8 @@ fi
 
 **Note**: This script always runs (not optional) as these development tools are essential.
 
-**Improvements**: 
+**Improvements**:
+
 - All downloads use shared functions from `common.sh` with timeouts (300-600s), connection timeouts (30s), and automatic retries (3 attempts)
 - Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
 - **Disk space check** before Android Studio installation (requires ~3GB)
@@ -431,7 +436,8 @@ fi
 
 **Note**: This script always runs (not optional) as these applications are essential for daily use.
 
-**Improvements**: 
+**Improvements**:
+
 - Downloads now use shared functions from `common.sh` with timeouts (300s), connection timeouts (30s), and automatic retries (3 attempts)
 - Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
 
