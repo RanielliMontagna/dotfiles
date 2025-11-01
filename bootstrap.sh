@@ -23,7 +23,52 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Get the directory where this script is located
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# This handles both cases: local execution and curl | bash
+get_dotfiles_dir() {
+    local script_source="${BASH_SOURCE[0]}"
+    
+    # If running from a file (local execution)
+    if [[ -f "$script_source" ]]; then
+        echo "$(cd "$(dirname "$script_source")" && pwd)"
+        return 0
+    fi
+    
+    # If running via curl | bash, check current directory
+    if [[ -d "scripts" ]] && [[ -f "bootstrap.sh" ]]; then
+        echo "$(pwd)"
+        return 0
+    fi
+    
+    # Try to find dotfiles directory in common locations
+    local possible_dirs=(
+        "$HOME/dotfiles"
+        "$HOME/www/my/dotfiles"
+        "$(pwd)"
+    )
+    
+    for dir in "${possible_dirs[@]}"; do
+        if [[ -d "$dir/scripts" ]] && [[ -f "$dir/bootstrap.sh" ]]; then
+            echo "$dir"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+DOTFILES_DIR="$(get_dotfiles_dir)"
+if [[ -z "$DOTFILES_DIR" ]] || [[ ! -d "$DOTFILES_DIR/scripts" ]]; then
+    echo -e "\033[0;31m✗ Error: Cannot find dotfiles directory!\033[0m" >&2
+    echo "" >&2
+    echo "Please clone the repository first:" >&2
+    echo "  git clone https://github.com/RanielliMontagna/dotfiles.git" >&2
+    echo "  cd dotfiles" >&2
+    echo "  bash bootstrap.sh" >&2
+    echo "" >&2
+    echo "Or if you're already in the dotfiles directory, make sure the 'scripts/' folder exists." >&2
+    exit 1
+fi
+
 SCRIPTS_DIR="$DOTFILES_DIR/scripts"
 
 ###############################################################################
@@ -81,6 +126,33 @@ main() {
     
     print_info "Starting setup process..."
     print_info "Dotfiles directory: $DOTFILES_DIR"
+    
+    # Verify scripts directory exists
+    if [[ ! -d "$SCRIPTS_DIR" ]]; then
+        print_error "Scripts directory not found: $SCRIPTS_DIR"
+        print_error "Please make sure you've cloned the repository first."
+        exit 1
+    fi
+    
+    # Verify essential scripts exist
+    local required_scripts=(
+        "01-essentials.sh"
+        "02-shell.sh"
+        "03-nodejs.sh"
+        "04-editors.sh"
+        "05-docker.sh"
+        "06-java.sh"
+        "07-dev-tools.sh"
+        "08-applications.sh"
+    )
+    
+    for script in "${required_scripts[@]}"; do
+        if [[ ! -f "$SCRIPTS_DIR/$script" ]]; then
+            print_error "Required script not found: $SCRIPTS_DIR/$script"
+            print_error "Please make sure you've cloned the complete repository."
+            exit 1
+        fi
+    done
     
     # Check OS compatibility
     check_os
