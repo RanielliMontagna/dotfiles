@@ -59,7 +59,7 @@ main() {
         print_info "Java 8 already installed"
     else
         print_info "Installing Java 8..."
-        sdk install java 8.0.392-tem || sdk install java 8.0.382-tem || sdk install java 8.0.372-tem
+        yes "n" | sdk install java 8.0.392-tem || yes "n" | sdk install java 8.0.382-tem || yes "n" | sdk install java 8.0.372-tem
         print_success "Java 8 installed"
     fi
     
@@ -68,7 +68,7 @@ main() {
         print_info "Java 11 already installed"
     else
         print_info "Installing Java 11..."
-        sdk install java 11.0.21-tem || sdk install java 11.0.20-tem || sdk install java 11.0.19-tem
+        yes "n" | sdk install java 11.0.21-tem || yes "n" | sdk install java 11.0.20-tem || yes "n" | sdk install java 11.0.19-tem
         print_success "Java 11 installed"
     fi
     
@@ -77,7 +77,7 @@ main() {
         print_info "Java 17 already installed"
     else
         print_info "Installing Java 17..."
-        sdk install java 17.0.9-tem || sdk install java 17.0.8-tem || sdk install java 17.0.7-tem
+        yes "n" | sdk install java 17.0.9-tem || yes "n" | sdk install java 17.0.8-tem || yes "n" | sdk install java 17.0.7-tem
         print_success "Java 17 installed"
     fi
     
@@ -86,13 +86,24 @@ main() {
         print_info "Java 21 (LTS) already installed"
     else
         print_info "Installing Java 21 (LTS)..."
-        sdk install java 21.0.1-tem || sdk install java 21.0.0-tem || sdk install java 17.0.9-tem
+        yes "n" | sdk install java 21.0.1-tem || yes "n" | sdk install java 21.0.0-tem || yes "n" | sdk install java 17.0.9-tem
         print_success "Java LTS installed"
     fi
     
     # Set Java 17 as default (most commonly used)
+    # Try to find the actual installed version first
     print_info "Setting Java 17 as default..."
-    sdk default java 17.0.9-tem 2>/dev/null || sdk default java 17.0.8-tem 2>/dev/null || true
+    local java17_version
+    java17_version=$(sdk list java | grep -E "17\.0\..*-tem.*installed" | head -1 | awk '{print $NF}' | tr -d '|' | xargs) || true
+    
+    if [[ -n "$java17_version" ]]; then
+        sdk default java "$java17_version" 2>/dev/null || true
+    else
+        # Fallback to common versions
+        sdk default java 17.0.9-tem 2>/dev/null || \
+        sdk default java 17.0.8-tem 2>/dev/null || \
+        sdk default java 17.0.7-tem 2>/dev/null || true
+    fi
     
     print_success "Java SDK installed successfully!"
     print_info "SDKMAN is initialized. Use 'sdk use java <version>' to switch Java versions"
