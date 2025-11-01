@@ -587,6 +587,8 @@ export APT_UPDATE_DONE
 # If force is set to "true", forces update even if already done
 ensure_apt_updated() {
     local force="${1:-false}"
+    local max_retries=3
+    local retry_count=0
     
     if [[ "$APT_UPDATE_DONE" == "true" ]] && [[ "$force" != "true" ]]; then
         print_info "Package list already updated in this session"
@@ -594,13 +596,58 @@ ensure_apt_updated() {
     fi
     
     print_info "Updating package lists..."
-    if sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq; then
+    
+    # Try to update with retries (mirrors may be syncing)
+    while [[ $retry_count -lt $max_retries ]]; do
+        # Use --fix-missing to be more tolerant of missing indexes
+        local update_output
+        if update_output=$(sudo DEBIAN_FRONTEND=noninteractive apt-get update --fix-missing -qq 2>&1); then
+            APT_UPDATE_DONE=true
+            export APT_UPDATE_DONE
+            print_success "Package lists updated"
+            return 0
+        else
+            # Check if it's just a mirror sync issue (some files failed but not critical)
+            if echo "$update_output" | grep -q "Some index files failed to download"; then
+                print_warning "Some package indexes failed to download (mirror may be syncing)"
+                print_info "This is usually temporary. Continuing with available packages..."
+                APT_UPDATE_DONE=true
+                export APT_UPDATE_DONE
+                return 0  # Continue anyway, apt-get will use old indexes
+            fi
+            
+            retry_count=$((retry_count + 1))
+            if [[ $retry_count -lt $max_retries ]]; then
+                print_warning "Package list update failed, retrying ($retry_count/$max_retries)..."
+                sleep 2
+            fi
+        fi
+    done
+    
+    # If all retries failed, try one more time with more permissive flags
+    print_warning "Retrying with more permissive update flags..."
+    local final_output
+    if final_output=$(sudo DEBIAN_FRONTEND=noninteractive apt-get update --fix-missing --allow-releaseinfo-change 2>&1); then
         APT_UPDATE_DONE=true
         export APT_UPDATE_DONE
-        print_success "Package lists updated"
+        print_success "Package lists updated (with warnings)"
         return 0
     else
-        print_error "Failed to update package lists"
+        # Even if it fails completely, we can try to continue (apt-get will use cached lists)
+        if echo "$final_output" | grep -q "Some index files failed to download"; then
+            print_warning "Some package indexes failed, but continuing with cached/old indexes..."
+            print_info "This may cause some packages to not be found, but installation will continue"
+            APT_UPDATE_DONE=true
+            export APT_UPDATE_DONE
+            return 0
+        fi
+        
+        print_error "Failed to update package lists after $max_retries attempts"
+        print_info "Troubleshooting tips:"
+        print_info "  1. Check your internet connection"
+        print_info "  2. Try again in a few minutes (mirror may be syncing)"
+        print_info "  3. Clear apt cache: sudo apt-get clean"
+        print_info "  4. Try a different mirror or main Ubuntu archive"
         return 1
     fi
 }
