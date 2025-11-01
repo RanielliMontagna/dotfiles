@@ -47,7 +47,10 @@ dotfiles/
 └── test.sh                  # Test script
 ```
 
-**Note**: This project uses `release-please` for automatic changelog generation on releases. Requires `package.json` for version management. Don't manually create/update CHANGELOG.md.
+**Note**:
+
+- This project uses `release-please` for automatic changelog generation on releases. Requires `package.json` for version management. Don't manually create/update CHANGELOG.md.
+- All scripts use shared functions from `scripts/common.sh` for consistency and reliability.
 
 ---
 
@@ -143,12 +146,11 @@ fi
 **Behavior**:
 
 - Checks OS compatibility (Zorin/Ubuntu)
-- **Checks internet connectivity** before proceeding (new)
-- **Renews sudo automatically** during long installations (new)
-- **Centralized apt-get update** - Updates package lists once at the beginning (optimization)
+- Verifies internet connectivity before proceeding
+- Automatically renews sudo during long installations
+- Centralized apt-get update (optimization)
 - Executes scripts 01-08 always
 - Prompts user for script 09 (Extras)
-- Makes all scripts executable
 - Sources `scripts/common.sh` for shared functions
 - Provides colored output (info, success, warning, error)
 - Exits on error (`set -e`)
@@ -290,13 +292,7 @@ fi
 
 **Note**: This script always runs (not optional) as both editors are essential for development.
 
-**Improvements**:
-
-- Uses `safe_curl_download_with_cache()` from `common.sh` for reliable downloads with automatic retries and caching
-- Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
-- **Fixed download URLs**: Now uses official API (`api2.cursor.sh`) and direct links (`downloads.cursor.com`) instead of obsolete `downloader.cursor.sh` domain
-- **Architecture validation** before download to ensure compatibility
-- Supports both amd64 and arm64 architectures
+**Note**: Uses `safe_curl_download_with_cache()` from `common.sh` for reliable downloads with automatic retries, caching, and architecture validation. Supports both amd64 and arm64 architectures.
 
 ---
 
@@ -356,11 +352,7 @@ fi
 
 **Note**: This script always runs (not optional) as Java is essential for development.
 
-**Improvements**:
-
-- **Disk space check** before installation (requires ~2GB for 4 Java versions)
-- **Progress indicators** during Java version installation (`[X/4] Installing Java...`)
-- Uses `common.sh` functions for consistent behavior
+**Note**: Includes disk space check (~2GB required) and progress indicators during installation.
 
 ---
 
@@ -386,21 +378,11 @@ fi
 - Checks `command -v` for Android Studio, DBeaver, Postman
 - Checks for installation directories
 
-**Source**:
-
-- Android Studio: Snap or official Google download - **now uses `safe_wget_download()` with timeout**
-- DBeaver: Snap or official .deb - **now uses `safe_curl_download()` with timeout and retry**
-- Postman: Snap or official download - **now uses `safe_curl_download()` with timeout and retry**
+**Source**: Snap store (preferred) or official downloads with fallback methods.
 
 **Note**: This script always runs (not optional) as these development tools are essential.
 
-**Improvements**:
-
-- All downloads use shared functions from `common.sh` with timeouts (300-600s), connection timeouts (30s), and automatic retries (3 attempts)
-- Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
-- Uses `ensure_apt_updated()` to avoid redundant apt-get update calls
-- **Disk space check** before Android Studio installation (requires ~3GB)
-- **Progress indicators** during Android SDK component installation
+**Note**: Uses `common.sh` functions for downloads, caching, and APT optimization. Includes disk space check (~3GB for Android Studio) and progress indicators.
 
 ---
 
@@ -444,26 +426,11 @@ fi
 - Checks `dpkg -l` for packages
 - Verifies installation directories
 
-**Source**:
-
-- Chrome: Official Google download - **now uses `safe_curl_download()` with timeout and retry**
-- Brave: Official Brave repository
-- Firefox: Ubuntu repositories
-- Steam: Snap store or Ubuntu repositories
-- Spotify: Snap store or official Spotify repository
-- Discord: Snap store or official Discord download - **now uses `safe_curl_download()` with timeout and retry**
-- OBS Studio: Snap store or Ubuntu repositories
-- NordVPN: Official NordVPN installer
-- Bitwarden: Snap store or official Bitwarden download - **now uses `safe_curl_download()` with timeout and retry**
+**Source**: Mix of Snap store (preferred), official repositories, and direct downloads with fallback methods.
 
 **Note**: This script always runs (not optional) as these applications are essential for daily use.
 
-**Improvements**:
-
-- Downloads now use shared functions from `common.sh` with timeouts (300s), connection timeouts (30s), and automatic retries (3 attempts)
-- Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
-- Uses `ensure_apt_updated()` to avoid redundant apt-get update calls
-- **Architecture validation** for Chrome installation
+**Note**: Uses `common.sh` functions for downloads, caching, APT optimization, and architecture validation.
 
 ---
 

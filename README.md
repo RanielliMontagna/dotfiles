@@ -132,31 +132,6 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 
 ---
 
-## 🚀 Recent Improvements
-
-The project has been enhanced with **high, medium, and low priority improvements** for better reliability and performance:
-
-### High Priority ✅
-
-- ✅ **Download timeouts and retries** - All downloads now have timeouts (300-600s) and automatic retries (3 attempts) to prevent hanging
-- ✅ **Internet connectivity check** - Verifies connection before starting installation
-- ✅ **Automatic sudo renewal** - Keeps sudo credentials active during long installations
-- ✅ **Shared functions** - New `scripts/common.sh` provides reusable functions for all scripts, reducing code duplication
-
-### Medium Priority ✅
-
-- ✅ **Download cache** - Files are cached in `~/.cache/dotfiles/` to avoid re-downloading on script re-execution
-- ✅ **Disk space verification** - Checks available space before installing large packages (Java SDKs ~2GB, Android Studio ~3GB)
-- ✅ **Progress indicators** - Shows progress during long installations (e.g., `[2/4] Installing Java 11...`, `[3/5] Installing Android SDK component...`)
-
-### Low Priority ✅ (NEW)
-
-- ✅ **APT optimization** - `apt-get update` now runs only once at the beginning, significantly reducing total installation time (from ~12 updates to 1)
-- ✅ **Architecture validation** - Verifies system architecture (amd64, arm64) before downloads to ensure compatibility
-- ✅ **Checksum validation** - Optional SHA256 checksum verification for downloaded files when checksums are available
-
-These improvements make the installation process more robust, faster on re-runs, and prevent common issues like hanging downloads, expired sudo passwords, or insufficient disk space failures. The APT optimization alone can save several minutes during installation by avoiding redundant package list updates.
-
 ---
 
 ## 📚 Documentation

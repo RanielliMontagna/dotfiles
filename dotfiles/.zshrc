@@ -2,6 +2,16 @@
 # Path to Oh My Zsh installation
 export ZSH="$HOME/.oh-my-zsh"
 
+# ============================================================================
+# Powerlevel10k Instant Prompt
+# ============================================================================
+
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# This must be loaded BEFORE Oh My Zsh is sourced.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
 # Theme - Powerlevel10k
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
@@ -108,16 +118,12 @@ if command -v fzf &> /dev/null; then
 fi
 
 # ============================================================================
-# Powerlevel10k Instant Prompt
+# Powerlevel10k Configuration
 # ============================================================================
 
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# This should be loaded AFTER Oh My Zsh is sourced.
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # ============================================================================
 # Utility Functions

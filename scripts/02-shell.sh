@@ -84,16 +84,18 @@ main() {
         print_success "Powerlevel10k installed"
     fi
     
-    # Configure Powerlevel10k automatically
+    # Configure Powerlevel10k automatically (copy, not symlink - allows customization)
     P10K_CONFIG_FILE="$HOME/.p10k.zsh"
-    if [[ ! -f "$P10K_CONFIG_FILE" ]] || [[ "$P10K_CONFIG_FILE" -ot "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]]; then
-        if [[ -f "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]]; then
+    if [[ -f "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]]; then
+        if [[ ! -f "$P10K_CONFIG_FILE" ]] || [[ "$DOTFILES_CONFIG_DIR/.p10k.zsh" -nt "$P10K_CONFIG_FILE" ]]; then
             print_info "Configuring Powerlevel10k automatically..."
             cp "$DOTFILES_CONFIG_DIR/.p10k.zsh" "$P10K_CONFIG_FILE"
             print_success "Powerlevel10k configured automatically"
+        else
+            print_info "Powerlevel10k already configured (using existing ~/.p10k.zsh)"
         fi
     else
-        print_info "Powerlevel10k already configured"
+        print_warning "Powerlevel10k config file not found in dotfiles directory"
     fi
     
     # Create project directories structure
@@ -114,13 +116,22 @@ main() {
     # Link dotfiles
     print_info "Linking dotfiles..."
     
-    # Backup existing files
-    for file in .zshrc .gitconfig .aliases .p10k.zsh; do
+    # Backup existing files (excluding .p10k.zsh which should not be symlinked)
+    for file in .zshrc .gitconfig .aliases; do
         if [[ -f "$HOME/$file" ]] && [[ ! -L "$HOME/$file" ]]; then
             print_warning "Backing up existing $file to $file.backup"
             mv "$HOME/$file" "$HOME/$file.backup"
         fi
     done
+    
+    # Backup .p10k.zsh separately (it's copied, not symlinked)
+    if [[ -f "$HOME/.p10k.zsh" ]] && [[ ! -f "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]] || [[ "$HOME/.p10k.zsh" -nt "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]]; then
+        # Only backup if it's a custom file, not from dotfiles
+        if ! diff -q "$HOME/.p10k.zsh" "$DOTFILES_CONFIG_DIR/.p10k.zsh" &>/dev/null; then
+            print_warning "Backing up existing .p10k.zsh to .p10k.zsh.backup"
+            cp "$HOME/.p10k.zsh" "$HOME/.p10k.zsh.backup" 2>/dev/null || true
+        fi
+    fi
     
     # Backup existing Git config files if they exist and are not symlinks
     if [[ -f "$HOME/.gitconfig-my" ]] && [[ ! -L "$HOME/.gitconfig-my" ]]; then
