@@ -211,42 +211,155 @@ configure_gnome_appearance() {
         return 0
     fi
     
-    print_info "Configuring Zorin OS dark theme..."
+    print_info "Configuring Zorin OS 18 dark theme..."
     
-    # Enable dark mode for applications (this is the main setting for Zorin OS)
+    # Try using Zorin Appearance tool if available (most reliable method for Zorin OS)
+    if command -v zorin-appearance &> /dev/null; then
+        print_info "Using Zorin Appearance tool to set dark theme..."
+        # Zorin Appearance can be controlled via dconf
+        # The schema might be org.zorin.desktop.interface or similar
+        # Try to set via dconf first
+        if command -v dconf &> /dev/null; then
+            # Try Zorin-specific paths
+            dconf write /org/zorin/desktop/interface/color-scheme "'dark'" 2>/dev/null || \
+            dconf write /org/zorin/desktop/interface/color-scheme "'prefer-dark'" 2>/dev/null || true
+            
+            # Try to get current Zorin appearance settings
+            local zorin_theme
+            zorin_theme=$(dconf read /org/zorin/desktop/interface/gtk-theme 2>/dev/null | tr -d "'" || echo "")
+            if [[ -n "$zorin_theme" ]] && [[ "$zorin_theme" != *"-dark" ]]; then
+                # Set dark variant
+                local zorin_dark="${zorin_theme%-light}-dark"
+                if [[ -z "$zorin_dark" ]] || [[ "$zorin_dark" == "-dark" ]]; then
+                    zorin_dark="${zorin_theme}-dark"
+                fi
+                if [[ -d "/usr/share/themes/$zorin_dark" ]]; then
+                    dconf write /org/zorin/desktop/interface/gtk-theme "'$zorin_dark'" 2>/dev/null || true
+                    print_success "Zorin dark theme set via dconf: $zorin_dark"
+                fi
+            fi
+        fi
+    fi
+    
+    # Get current theme to detect Zorin theme name
+    local current_theme
+    current_theme=$(get_gnome_setting "org.gnome.desktop.interface" "gtk-theme" 2>/dev/null | tr -d "'" || echo "")
+    print_info "Current GTK theme: $current_theme"
+    
+    # Zorin OS 18 specific: Find and set dark variant directly
+    # This is important because color-scheme alone may not activate the dark theme
+    local dark_theme_applied=false
+    
+    if [[ -n "$current_theme" ]]; then
+        # Remove quotes and detect theme type
+        current_theme=$(echo "$current_theme" | tr -d "'")
+        
+        # If already dark, confirm it
+        if [[ "$current_theme" == *"-dark" ]] || [[ "$current_theme" == *"Dark" ]]; then
+            print_info "Theme already appears to be dark: $current_theme"
+            dark_theme_applied=true
+        else
+            # Try to find dark variant
+            local dark_theme=""
+            
+            # Method 1: Replace -light with -dark
+            if [[ "$current_theme" == *"-light" ]]; then
+                dark_theme="${current_theme%-light}-dark"
+            # Method 2: Try common patterns
+            elif [[ "$current_theme" == *"Light" ]]; then
+                dark_theme="${current_theme%Light}Dark"
+            # Method 3: Add -dark suffix
+            else
+                dark_theme="${current_theme}-dark"
+            fi
+            
+            # Check if dark variant exists
+            if [[ -n "$dark_theme" ]]; then
+                if [[ -d "/usr/share/themes/$dark_theme" ]] || [[ -d "$HOME/.themes/$dark_theme" ]]; then
+                    print_info "Applying dark theme: $dark_theme"
+                    set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'$dark_theme'" || true
+                    if command -v dconf &> /dev/null; then
+                        dconf write /org/gnome/desktop/interface/gtk-theme "'$dark_theme'" 2>/dev/null || true
+                    fi
+                    print_success "Dark theme applied: $dark_theme"
+                    dark_theme_applied=true
+                fi
+            fi
+        fi
+    fi
+    
+    # If dark theme not applied yet, try to find any available dark theme
+    if [[ "$dark_theme_applied" == "false" ]]; then
+        print_info "Searching for available dark themes..."
+        
+        # Check for Yaru dark variants (common in Ubuntu-based systems like Zorin)
+        local yaru_dark_themes=("Yaru-dark" "Yaru-purple-dark" "Yaru-blue-dark" "Yaru-green-dark" "Yaru-red-dark" "Yaru-orange-dark")
+        
+        for theme in "${yaru_dark_themes[@]}"; do
+            if [[ -d "/usr/share/themes/$theme" ]]; then
+                print_info "Found and applying dark theme: $theme"
+                set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'$theme'" || true
+                if command -v dconf &> /dev/null; then
+                    dconf write /org/gnome/desktop/interface/gtk-theme "'$theme'" 2>/dev/null || true
+                fi
+                print_success "Applied dark theme: $theme"
+                dark_theme_applied=true
+                break
+            fi
+        done
+        
+        # If still not found, try Adwaita-dark (usually always available)
+        if [[ "$dark_theme_applied" == "false" ]]; then
+            if [[ -d "/usr/share/themes/Adwaita-dark" ]]; then
+                print_info "Applying Adwaita-dark theme as fallback..."
+                set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'Adwaita-dark'" || true
+                if command -v dconf &> /dev/null; then
+                    dconf write /org/gnome/desktop/interface/gtk-theme "'Adwaita-dark'" 2>/dev/null || true
+                fi
+                print_success "Applied Adwaita-dark theme"
+                dark_theme_applied=true
+            fi
+        fi
+    fi
+    
+    # Enable dark mode via color-scheme (GNOME 42+ method - works on Zorin OS 18)
+    print_info "Enabling dark color scheme..."
     set_gnome_setting "org.gnome.desktop.interface" "color-scheme" "'prefer-dark'" || true
     print_success "Dark color scheme enabled"
     
-    # Use Zorin OS native theme (will automatically use dark variant)
-    print_info "Setting Zorin OS native theme..."
-    # Get current theme to see if we need to change it
-    local current_theme
-    current_theme=$(get_gnome_setting "org.gnome.desktop.interface" "gtk-theme" 2>/dev/null || echo "")
-    
-    # If theme is set to a light variant, switch to dark variant
-    if [[ -n "$current_theme" ]]; then
-        print_info "Current theme: $current_theme"
-        # Zorin OS themes typically have -dark variants
-        # But the color-scheme preference should handle this automatically
+    # Also try setting it via dconf (more reliable)
+    if command -v dconf &> /dev/null; then
+        dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'" 2>/dev/null || true
     fi
     
-    # For Zorin OS, the color-scheme setting should be sufficient
-    # The system will automatically use the dark variant of the current theme
-    print_success "Zorin OS will use dark theme variant automatically"
-    
-    # Set GNOME Shell theme (for top bar and shell UI)
+    # Set GNOME Shell theme (for top bar and shell UI) - Important for Zorin OS 18
     print_info "Setting GNOME Shell theme to dark..."
     if command -v dconf &> /dev/null; then
-        # Check if User Themes extension is needed for shell theming
-        # For Zorin/GNOME, the shell typically uses the system theme
-        # The color-scheme setting should handle most of it
-        # But we can also try to set shell theme if User Themes extension is installed
+        # Get the GTK theme we just set
+        local applied_gtk_theme
+        applied_gtk_theme=$(get_gnome_setting "org.gnome.desktop.interface" "gtk-theme" 2>/dev/null | tr -d "'" || echo "")
+        
+        # Try to set shell theme to match GTK theme
+        # First try User Themes extension (if installed)
         if gnome-extensions list 2>/dev/null | grep -q "user-theme"; then
-            dconf write /org/gnome/shell/extensions/user-theme/name "'Adwaita-dark'" 2>/dev/null || true
+            if [[ -n "$applied_gtk_theme" ]]; then
+                dconf write /org/gnome/shell/extensions/user-theme/name "'$applied_gtk_theme'" 2>/dev/null || true
+            else
+                dconf write /org/gnome/shell/extensions/user-theme/name "'Adwaita-dark'" 2>/dev/null || true
+            fi
             print_info "User Themes extension detected, shell theme configured"
         fi
-        # Most modern GNOME versions (40+) use color-scheme for shell automatically
-        print_info "Shell theme will follow system color scheme (dark)"
+        
+        # Also try setting shell theme directly (may work in some GNOME versions)
+        # Note: This might not work in all GNOME versions, but worth trying
+        if [[ -n "$applied_gtk_theme" ]]; then
+            # Try Yaru-dark shell theme if available
+            if [[ "$applied_gtk_theme" == *"Yaru"* ]] && [[ -d "/usr/share/gnome-shell/theme/Yaru-dark" ]]; then
+                dconf write /org/gnome/shell/theme/name "'Yaru-dark'" 2>/dev/null || true
+            fi
+        fi
+        
+        print_success "GNOME Shell configured for dark theme"
     fi
     
     # Keep Zorin OS native icon theme (will use dark variant automatically)
@@ -306,6 +419,27 @@ configure_gnome_appearance() {
     # Set document font
     if fc-list | grep -q "Inter"; then
         set_gnome_setting "org.gnome.desktop.interface" "document-font-name" "'Inter 11'" || true
+    fi
+    
+    # Final verification: Check if dark theme is actually applied
+    print_info "Verifying dark theme application..."
+    local final_theme
+    final_theme=$(get_gnome_setting "org.gnome.desktop.interface" "gtk-theme" 2>/dev/null | tr -d "'" || echo "")
+    local final_color_scheme
+    final_color_scheme=$(get_gnome_setting "org.gnome.desktop.interface" "color-scheme" 2>/dev/null | tr -d "'" || echo "")
+    
+    if [[ "$final_theme" == *"-dark" ]] || [[ "$final_theme" == *"Dark" ]] || [[ "$final_color_scheme" == "prefer-dark" ]]; then
+        print_success "Dark theme is configured: $final_theme (color-scheme: $final_color_scheme)"
+        print_info "Note: You may need to restart applications or log out/in for changes to fully apply"
+    else
+        print_warning "Dark theme might not be fully applied"
+        print_info "Current theme: $final_theme"
+        print_info "Current color-scheme: $final_color_scheme"
+        print_info ""
+        print_info "To manually enable dark theme in Zorin OS 18:"
+        print_info "  1. Open 'Zorin Appearance' from Applications"
+        print_info "  2. Select 'Dark' in the Appearance tab"
+        print_info "  Or run: gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'"
     fi
     
     print_success "GNOME appearance settings configured"
