@@ -132,7 +132,7 @@ install_custom_fonts() {
             # Install unzip if not available
             if ! command -v unzip &> /dev/null; then
                 ensure_apt_updated
-                sudo apt-get install -y unzip
+                DEBIAN_FRONTEND=noninteractive sudo apt-get install -y unzip 2>/dev/null || true
             fi
             
             if command -v unzip &> /dev/null; then
@@ -170,7 +170,7 @@ install_custom_fonts() {
             # Install unzip if not available
             if ! command -v unzip &> /dev/null; then
                 ensure_apt_updated
-                sudo apt-get install -y unzip
+                DEBIAN_FRONTEND=noninteractive sudo apt-get install -y unzip 2>/dev/null || true
             fi
             
             if command -v unzip &> /dev/null; then
@@ -470,8 +470,8 @@ install_gnome_extensions() {
     if ! command -v gnome-extensions-app &> /dev/null && ! is_installed "gnome-shell-extensions"; then
         print_info "Installing GNOME Shell Extensions..."
         ensure_apt_updated
-        sudo apt-get install -y gnome-shell-extensions gnome-shell-extension-manager || \
-        sudo apt-get install -y gnome-shell-extensions chrome-gnome-shell || true
+        DEBIAN_FRONTEND=noninteractive sudo apt-get install -y gnome-shell-extensions gnome-shell-extension-manager 2>/dev/null || \
+        DEBIAN_FRONTEND=noninteractive sudo apt-get install -y gnome-shell-extensions chrome-gnome-shell 2>/dev/null || true
         
         print_success "GNOME Shell Extensions support installed"
     else
@@ -683,14 +683,14 @@ configure_system_extensions() {
     if ! command -v extension-manager &> /dev/null && ! is_installed "gnome-shell-extension-manager"; then
         print_info "Installing Extension Manager..."
         ensure_apt_updated
-        sudo apt-get install -y gnome-shell-extension-manager 2>/dev/null || true
+        DEBIAN_FRONTEND=noninteractive sudo apt-get install -y gnome-shell-extension-manager 2>/dev/null || true
     fi
     
     # Install chrome-gnome-shell for browser integration (helps with extension installation)
     if ! is_installed "chrome-gnome-shell"; then
         print_info "Installing chrome-gnome-shell for extension support..."
         ensure_apt_updated
-        sudo apt-get install -y chrome-gnome-shell 2>/dev/null || true
+        DEBIAN_FRONTEND=noninteractive sudo apt-get install -y chrome-gnome-shell 2>/dev/null || true
     fi
     
     # Get GNOME Shell version for extension compatibility
@@ -704,7 +704,7 @@ configure_system_extensions() {
     if ! command -v unzip &> /dev/null; then
         print_info "Installing unzip for extension extraction..."
         ensure_apt_updated
-        sudo apt-get install -y unzip 2>/dev/null || true
+        DEBIAN_FRONTEND=noninteractive sudo apt-get install -y unzip 2>/dev/null || true
     fi
     
     # Function to get extension download URL from extensions.gnome.org API
@@ -807,86 +807,6 @@ configure_system_extensions() {
         
         return 1
     }
-    
-    # Install Clipboard Indicator (clipboard-indicator@tudmotu.com)
-    print_info "Installing Clipboard Indicator extension..."
-    local clipboard_id="779"  # Extension ID from extensions.gnome.org
-    local clipboard_uuid="clipboard-indicator@tudmotu.com"
-    local clipboard_installed=false
-    
-    # First, try via Extension Manager CLI (if available)
-    if install_extension_via_manager "$clipboard_uuid" "$clipboard_id"; then
-        print_success "Clipboard Indicator installed via Extension Manager"
-        clipboard_installed=true
-    else
-        # Fallback to manual ZIP download
-        print_info "Installing Clipboard Indicator from extensions.gnome.org..."
-        local clipboard_url=""
-        
-        # Try to get download URL from API
-        print_info "Fetching compatible version from extensions.gnome.org..."
-        clipboard_url=$(get_extension_download_url "$clipboard_id" "$gnome_version" 2>/dev/null || echo "")
-        
-        # If API failed, try with major version only
-        if [[ -z "$clipboard_url" ]] || [[ "$clipboard_url" == "null" ]]; then
-            print_info "Trying with major version..."
-            clipboard_url=$(get_extension_download_url "$clipboard_id" "${major_version}.0" 2>/dev/null || echo "")
-        fi
-        
-        # Multiple fallback URLs for different versions
-        if [[ -z "$clipboard_url" ]] || [[ "$clipboard_url" == "null" ]]; then
-            print_info "Using fallback URLs..."
-            # Try multiple common version numbers (most recent first)
-            local fallback_versions=("47" "46" "45" "44" "43" "42" "41" "40")
-            for version in "${fallback_versions[@]}"; do
-                local test_url="https://extensions.gnome.org/extension-data/${clipboard_uuid}.v${version}.shell-extension.zip"
-                print_info "Trying version $version..."
-                if curl -sLf --head --max-time 10 "$test_url" >/dev/null 2>&1; then
-                    clipboard_url="$test_url"
-                    print_success "Found compatible version: $version"
-                    break
-                fi
-            done
-        fi
-        
-        if [[ -n "$clipboard_url" ]] && [[ "$clipboard_url" != "null" ]]; then
-            if install_extension_from_zip "$clipboard_uuid" "$clipboard_url"; then
-                clipboard_installed=true
-            fi
-        fi
-    fi
-    
-    # Enable Clipboard Indicator if installed
-    if [[ "$clipboard_installed" == "true" ]]; then
-        print_info "Enabling Clipboard Indicator..."
-        # Wait a moment for extension to be fully installed
-        sleep 2
-        
-        # Try multiple methods to enable
-        if enable_extension "$clipboard_uuid"; then
-            print_success "Clipboard Indicator installed and enabled ✓"
-        else
-            print_warning "Clipboard Indicator installed but could not be enabled automatically"
-            print_info "Trying alternative enable method..."
-            # Try direct gnome-extensions command
-            if command -v gnome-extensions &> /dev/null; then
-                if gnome-extensions enable "$clipboard_uuid" 2>/dev/null; then
-                    print_success "Clipboard Indicator enabled via gnome-extensions"
-                else
-                    print_info "Please enable manually: Open Extension Manager and toggle Clipboard Indicator ON"
-                fi
-            else
-                print_info "Please enable manually: Open Extension Manager and toggle Clipboard Indicator ON"
-            fi
-        fi
-    else
-        print_warning "Could not install Clipboard Indicator automatically"
-        print_info "Please install it manually:"
-        print_info "  1. Open Extension Manager (extension-manager)"
-        print_info "  2. Search for 'Clipboard Indicator'"
-        print_info "  3. Click Install, then toggle it ON"
-        print_info "Or visit: https://extensions.gnome.org/extension/${clipboard_id}/clipboard-indicator/"
-    fi
     
     # Helper function to install and enable an extension
     install_and_enable_extension() {
@@ -1007,6 +927,11 @@ configure_system_extensions() {
             return 1
         fi
     }
+    
+    # Install Clipboard Indicator (clipboard icon in top bar)
+    if install_and_enable_extension "Clipboard Indicator" "779" "clipboard-indicator@tudmotu.com"; then
+        print_info "Clipboard Indicator is now active - clipboard icon in top bar"
+    fi
     
     # Install Blur My Shell (adds blur effects to GNOME Shell)
     if install_and_enable_extension "Blur My Shell" "3193" "blur-my-shell@aunetx"; then
