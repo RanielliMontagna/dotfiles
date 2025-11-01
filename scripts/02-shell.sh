@@ -103,9 +103,13 @@ main() {
     print_success "Dotfiles linked"
     
     # Change default shell to Zsh
-    if [[ "$SHELL" != "$(which zsh)" ]]; then
+    ZSH_PATH="$(which zsh)"
+    CURRENT_SHELL="$(getent passwd "$USER" | cut -d: -f7)"
+    
+    if [[ "$CURRENT_SHELL" != "$ZSH_PATH" ]]; then
         print_info "Setting Zsh as default shell..."
-        chsh -s "$(which zsh)"
+        # Use sudo since we've cached the password in bootstrap.sh
+        sudo chsh -s "$ZSH_PATH" "$USER"
         print_success "Zsh set as default shell"
         print_warning "You may need to log out and log back in for this to take effect"
     else

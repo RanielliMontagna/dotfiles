@@ -9,6 +9,8 @@
 #   bash bootstrap.sh
 #   or
 #   curl -s https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/bootstrap.sh | bash
+#   or for specific branch:
+#   DOTFILES_BRANCH=fix/minor-adjustments curl -s https://raw.githubusercontent.com/RanielliMontagna/dotfiles/fix/minor-adjustments/bootstrap.sh | bash
 #
 # This script is idempotent - safe to run multiple times
 ###############################################################################
@@ -156,6 +158,11 @@ main() {
     
     # Check OS compatibility
     check_os
+    
+    # Cache sudo password upfront to avoid interruptions during installation
+    # This will prompt once at the beginning and cache for ~15 minutes
+    print_info "Caching sudo credentials (you'll be asked for your password once)..."
+    sudo -v
     
     # Make sure all scripts are executable
     chmod +x "$SCRIPTS_DIR"/*.sh 2>/dev/null || true
