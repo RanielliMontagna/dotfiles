@@ -1,0 +1,201 @@
+# Shell Aliases
+# Sourced by .zshrc
+
+# ============================================================================
+# Navigation
+# ============================================================================
+
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias .....='cd ../../../..'
+
+alias ~='cd ~'
+alias -- -='cd -'  # Go to previous directory
+
+# ============================================================================
+# ls aliases (with colors and better formatting)
+# ============================================================================
+
+alias ls='ls --color=auto'
+alias ll='ls -lah'
+alias la='ls -A'
+alias l='ls -CF'
+alias lt='ls -lahtr'  # Sort by time, newest last
+
+# Use exa if available (better ls alternative)
+if command -v exa &> /dev/null; then
+    alias ls='exa --icons'
+    alias ll='exa -lah --icons'
+    alias la='exa -a --icons'
+    alias lt='exa -lah --sort=modified --icons'
+    alias tree='exa --tree --icons'
+fi
+
+# ============================================================================
+# Git aliases
+# ============================================================================
+
+alias g='git'
+alias gs='git status'
+alias ga='git add'
+alias gaa='git add .'
+alias gc='git commit'
+alias gcm='git commit -m'
+alias gp='git push'
+alias gpl='git pull'
+alias gl='git log --oneline --graph --decorate'
+alias gd='git diff'
+alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gb='git branch'
+alias gbd='git branch -d'
+alias gbD='git branch -D'
+alias gm='git merge'
+alias gr='git remote'
+alias grv='git remote -v'
+alias gst='git stash'
+alias gsp='git stash pop'
+alias gsl='git stash list'
+
+# ============================================================================
+# Docker aliases
+# ============================================================================
+
+alias d='docker'
+alias dc='docker-compose'
+alias dcu='docker-compose up'
+alias dcud='docker-compose up -d'
+alias dcd='docker-compose down'
+alias dcl='docker-compose logs'
+alias dclf='docker-compose logs -f'
+alias dps='docker ps'
+alias dpsa='docker ps -a'
+alias di='docker images'
+alias dex='docker exec -it'
+alias drm='docker rm'
+alias drmi='docker rmi'
+alias dprune='docker system prune -af'
+
+# ============================================================================
+# npm/yarn/pnpm aliases
+# ============================================================================
+
+alias ni='npm install'
+alias nid='npm install --save-dev'
+alias nig='npm install -g'
+alias nr='npm run'
+alias ns='npm start'
+alias nt='npm test'
+alias nrd='npm run dev'
+alias nrb='npm run build'
+
+alias yi='yarn install'
+alias ya='yarn add'
+alias yad='yarn add --dev'
+alias yr='yarn run'
+alias ys='yarn start'
+alias yt='yarn test'
+alias yrd='yarn dev'
+alias yrb='yarn build'
+
+alias pi='pnpm install'
+alias pa='pnpm add'
+alias pad='pnpm add -D'
+alias pr='pnpm run'
+alias ps='pnpm start'
+alias pt='pnpm test'
+alias prd='pnpm dev'
+alias prb='pnpm build'
+
+# ============================================================================
+# System aliases
+# ============================================================================
+
+alias update='sudo apt update && sudo apt upgrade -y'
+alias install='sudo apt install'
+alias remove='sudo apt remove'
+alias autoremove='sudo apt autoremove -y'
+alias search='apt search'
+
+# ============================================================================
+# Utility aliases
+# ============================================================================
+
+# Cat with syntax highlighting (if bat is installed)
+if command -v bat &> /dev/null; then
+    alias cat='bat'
+fi
+
+# Find with better interface (if fd is installed)
+if command -v fd &> /dev/null; then
+    alias find='fd'
+fi
+
+# Grep with color
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+
+# Disk usage
+alias df='df -h'
+alias du='du -h'
+
+# Make parent directories as needed
+alias mkdir='mkdir -p'
+
+# Interactive operations
+alias cp='cp -i'
+alias mv='mv -i'
+alias rm='rm -i'
+
+# ============================================================================
+# Network aliases
+# ============================================================================
+
+alias ports='netstat -tulanp'
+alias myip='curl ifconfig.me'
+alias localip="ip addr show | grep 'inet ' | grep -v 127.0.0.1 | awk '{print \$2}'"
+
+# ============================================================================
+# Process aliases
+# ============================================================================
+
+alias psg='ps aux | grep -v grep | grep -i -e VSZ -e'
+alias htop='htop -t'  # Tree view
+
+# ============================================================================
+# Development aliases
+# ============================================================================
+
+alias c='clear'
+alias h='history'
+alias reload='source ~/.zshrc'
+alias zshconfig='vim ~/.zshrc'
+alias aliases='vim ~/.aliases'
+
+# Python
+alias py='python3'
+alias pip='pip3'
+alias venv='python3 -m venv'
+alias activate='source venv/bin/activate'
+
+# ============================================================================
+# Custom functions as aliases
+# ============================================================================
+
+# Show all aliases
+alias show-aliases='cat ~/.aliases | grep "^alias" | sed "s/alias //" | sort'
+
+# Quick server
+alias serve='python3 -m http.server 8000'
+
+# Weather
+alias weather='curl wttr.in'
+
+# ============================================================================
+# Fun aliases
+# ============================================================================
+
+alias please='sudo'
+alias fucking='sudo'

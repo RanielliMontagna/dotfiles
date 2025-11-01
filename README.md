@@ -1,28 +1,503 @@
 # dotfiles (Zorin OS)
 
-Automated setup for a fresh **Zorin OS** machine. The idea is to run **one command** after installing the OS and get your full development environment ready (CLI tools, shell config, Node.js, Docker, editors, etc.).
+Automated setup for a fresh **Zorin OS** machine. Run **one command** after installing the OS and get your full development environment ready with modern tools, optimized shell, and sensible defaults.
 
-> Zorin-first: since Zorin is Ubuntu-based, everything here starts with `apt`.
-
----
-
-## Features
-
-- 🐧 Zorin/Ubuntu friendly
-- 🔁 Idempotent (safe to run more than once)
-- 🧰 Installs basic CLI tools (git, curl, build tools)
-- 🐚 Shell setup (zsh + dotfiles)
-- 🟦 Node.js via nvm
-- 🐳 Docker (optional script)
-- 📦 Structured by scripts (`scripts/NN-name.sh`)
-- 🤖 AI-friendly docs (`project.md`)
+> 🎯 **Zorin-first**: Since Zorin is Ubuntu-based, everything uses `apt` and official Ubuntu/Debian repositories.
 
 ---
 
-## Quick start (recommended way)
+## ✨ Features
+
+- 🐧 **Zorin/Ubuntu friendly** - Optimized for Ubuntu-based distributions
+- 🔁 **Idempotent** - Safe to run multiple times without breaking anything
+- 🧰 **Essential tools** - Git, curl, build-essential, modern CLI tools (ripgrep, bat, fzf)
+- 🐚 **Modern shell** - Zsh + Oh My Zsh + Powerlevel10k theme + useful plugins
+- � **Node.js LTS** - Via NVM with global packages (TypeScript, ESLint, Prettier)
+- 📝 **Code editors** - VS Code and Cursor (always installed)
+- 🐳 **Docker** - Latest stable from official repository (always installed)
+- ☕ **Java SDK** - Versions 8, 11, 17, LTS via SDKMAN (always installed)
+- 🛠️ **Dev tools** - Android Studio, DBeaver, Postman (always installed)
+- 🌐 **Applications** - Chrome, Brave, Firefox, Steam, Spotify, Discord, OBS Studio, NordVPN (always installed)
+- 🔧 **Extras** - GitHub CLI, database clients (optional)
+- 📦 **Modular scripts** - Organized by function, easy to customize
+- 📚 **Well documented** - AI-friendly docs with architecture and version info
+- ⚡ **Always updated** - Uses LTS and latest stable versions from official sources
+
+---
+
+## 🚀 Quick Start
+
+### Method 1: Clone and Run (Recommended)
 
 ```bash
-git clone https://github.com/<USER>/dotfiles.git
+# Clone the repository
+git clone https://github.com/RanielliMontagna/dotfiles.git
+cd dotfiles
+
+# Run the bootstrap script
+bash bootstrap.sh
+```
+
+### Method 2: One-Line Install
+
+```bash
+# Download and run directly (be careful with this approach!)
+curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/bootstrap.sh | bash
+```
+
+> ⚠️ **Note**: Always review scripts before running them on your system!
+
+---
+
+## 📋 What Gets Installed
+
+### Core Tools (Always Installed)
+
+- **Build essentials**: GCC, G++, make, and compilation tools
+- **Version control**: Git, Git LFS
+- **Network tools**: curl, wget, ca-certificates, net-tools
+- **Modern CLI**: ripgrep, bat, fd-find, fzf, htop, tree, jq
+- **System monitoring**: htop, lm-sensors, nvtop
+- **Editor**: nano (text editor)
+
+### Shell Environment (Always Installed)
+
+- **Zsh**: Modern shell with better features than bash
+- **Oh My Zsh**: Framework for managing Zsh configuration
+- **Plugins**:
+  - zsh-autosuggestions (command suggestions)
+  - zsh-syntax-highlighting (real-time syntax check)
+  - git, docker, node (completions and helpers)
+- **Theme**: Powerlevel10k (beautiful and informative prompt)
+
+### Node.js (Always Installed)
+
+- **NVM**: Latest version from GitHub
+- **Node.js**: LTS version (Long Term Support - most stable)
+- **Global packages**: yarn, pnpm, TypeScript, ts-node, nodemon, pm2, ESLint, Prettier
+
+### Code Editors (Always Installed)
+
+- **VS Code**: Latest stable from Microsoft repository
+- **Cursor**: AI-powered code editor (latest from official website)
+
+### Docker (Always Installed)
+
+- **Docker Engine**: Latest stable from official Docker repository
+- **Docker Compose**: V2 plugin
+- **Buildx**: Build with BuildKit
+- User added to docker group (no sudo needed)
+
+### Java SDK (Always Installed)
+
+- **SDKMAN**: Java version manager
+- **Java SDK**: Versions 8, 11, 17, and LTS (21)
+- Java 17 set as default
+
+### Development Tools (Always Installed)
+
+- **Android Studio**: Latest stable from Google
+- **DBeaver**: Database management tool
+- **Postman**: API testing tool
+
+### Applications (Always Installed)
+
+- **Browsers**: 
+  - Google Chrome (latest stable)
+  - Brave Browser (latest stable)
+  - Firefox (latest from Ubuntu repos)
+- **Gaming & Entertainment**:
+  - Steam (gaming platform)
+  - Spotify (music streaming)
+  - Discord (chat and communication)
+- **Media & Streaming**:
+  - OBS Studio (streaming and recording)
+- **VPN**:
+  - NordVPN (VPN service)
+
+### Extra Tools (Optional)
+
+- **Languages**: Python 3 with pip
+- **Git tools**: GitHub CLI (gh)
+- **Databases**: PostgreSQL client, SQLite, Redis CLI
+- **HTTP**: HTTPie
+
+---
+
+## 📚 Documentation
+
+- **README.md** - Complete user guide (this file)
+- **PROJECT.md** - Project overview and AI context
+
+---
+
+## 🔧 Configuration Files
+
+All configuration files are in the `dotfiles/` directory and are symlinked to your home:
+
+- **`.zshrc`** - Zsh configuration with plugins, theme, and custom functions
+- **`.gitconfig`** - Git aliases, better diffs, and sensible defaults
+- **`.aliases`** - Hundreds of useful aliases for Git, Docker, npm, and more
+
+After installation, your existing files will be backed up to `~/.filename.backup`.
+
+---
+
+## 📦 Version Policy
+
+This setup follows a **"always use latest stable/LTS"** approach:
+
+| Component       | Version Strategy                 |
+| --------------- | -------------------------------- |
+| System packages | Latest from Ubuntu repos         |
+| Node.js         | **LTS** (Long Term Support)      |
+| NVM             | Latest from GitHub               |
+| Docker          | Latest stable from official repo |
+| VS Code         | Latest stable (auto-updates)     |
+| Cursor          | Latest from official website     |
+| Java (SDKMAN)   | Versions 8, 11, 17, LTS (21)     |
+| Android Studio  | Latest stable                    |
+| npm packages    | Latest stable                    |
+
+All tools use LTS or latest stable versions from official sources.
+
+---
+
+## 🎯 Post-Installation
+
+After running the bootstrap script:
+
+### 1. Restart Your Terminal
+
+```bash
+# Or reload the shell config
+source ~/.zshrc
+```
+
+### 2. Configure Git with Your Details
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "your.email@example.com"
+```
+
+### 3. Configure Powerlevel10k Theme
+
+```bash
+p10k configure
+```
+
+This will guide you through customizing your prompt appearance.
+
+### 4. (Optional) Authenticate GitHub CLI
+
+```bash
+gh auth login
+```
+
+### 5. Switch Java Versions (if needed)
+
+```bash
+# List installed Java versions
+sdk list java
+
+# Switch to a specific version
+sdk use java 17.0.9-tem
+
+# Set default version
+sdk default java 17.0.9-tem
+```
+
+### 6. Configure NordVPN (if needed)
+
+```bash
+# Login to your NordVPN account
+nordvpn login
+
+# Connect to VPN
+nordvpn connect
+
+# Check status
+nordvpn status
+```
+
+### 7. (Optional) Log Out and Back In
+
+Required for Docker group permissions and NordVPN to take effect.
+
+---
+
+## 🔄 Updating
+
+### Update System Packages
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+### Update Node.js to Latest LTS
+
+```bash
+nvm install --lts
+nvm alias default lts/*
+```
+
+### Update Global npm Packages
+
+```bash
+npm update -g
+```
+
+### Update Oh My Zsh and Plugins
+
+```bash
+omz update
+
+# Update plugins manually
+cd ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions && git pull
+cd ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting && git pull
+cd ~/.oh-my-zsh/custom/themes/powerlevel10k && git pull
+```
+
+### Update Docker
+
+```bash
+sudo apt update && sudo apt upgrade docker-ce
+```
+
+### Update Java Versions
+
+```bash
+# Update SDKMAN
+sdk update
+
+# Install newer versions
+sdk install java <version>
+
+# Switch versions
+sdk use java <version>
+```
+
+### Update Android Studio
+
+```bash
+# If installed via snap
+sudo snap refresh android-studio
+
+# If installed manually, download latest from https://developer.android.com/studio
+```
+
+### Update Applications
+
+```bash
+# Update Chrome (auto-updates enabled)
+# Update Brave Browser
+sudo apt update && sudo apt upgrade brave-browser
+
+# Update Firefox
+sudo apt update && sudo apt upgrade firefox
+
+# Update Steam (if via snap)
+sudo snap refresh steam
+
+# Update Spotify (if via snap)
+sudo snap refresh spotify
+
+# Update Discord (if via snap)
+sudo snap refresh discord
+
+# Update OBS Studio (if via snap)
+sudo snap refresh obs-studio
+
+# Update NordVPN
+nordvpn update
+```
+
+---
+
+## 🛠️ Customization
+
+### Add Your Own Aliases
+
+Edit `~/.aliases` (symlinked to `dotfiles/.aliases`):
+
+```bash
+nano ~/.aliases
+# Then reload
+source ~/.zshrc
+```
+
+### Install Additional Node Versions
+
+```bash
+nvm install 18      # Install Node.js 18
+nvm install 20      # Install Node.js 20
+nvm use 18          # Switch to Node.js 18
+nvm alias default 20  # Set Node.js 20 as default
+```
+
+### Add More Scripts
+
+Create a new script in `scripts/`, e.g., `09-my-tools.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -e
+# Your installation logic here
+```
+
+Then add it to `bootstrap.sh`.
+
+---
+
+## 🧪 Testing
+
+Before running on your main machine, test in a VM:
+
+### Option 1: VirtualBox/VMware
+
+1. Create a new VM with Zorin OS
+2. Clone this repo
+3. Run `bash bootstrap.sh`
+4. Verify everything works
+5. Run again to test idempotency
+
+### Option 2: Docker Container
+
+```bash
+# Start Ubuntu container (similar to Zorin)
+docker run -it ubuntu:22.04 bash
+
+# Inside container:
+apt update && apt install -y git
+git clone https://github.com/RanielliMontagna/dotfiles.git
 cd dotfiles
 bash bootstrap.sh
 ```
+
+---
+
+## 🐛 Troubleshooting
+
+### Zsh not default shell after installation
+
+```bash
+chsh -s $(which zsh)
+# Then log out and log back in
+```
+
+### Docker permission denied
+
+```bash
+# Make sure you're in docker group
+groups
+
+# If not, add yourself
+sudo usermod -aG docker $USER
+# Then log out and log back in
+```
+
+### NVM command not found
+
+```bash
+# Make sure NVM is loaded
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Or restart your terminal
+```
+
+### Oh My Zsh plugins not working
+
+```bash
+# Check if plugins are installed
+ls ~/.oh-my-zsh/custom/plugins/
+
+# Reinstall if needed
+rm -rf ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+git clone https://github.com/zsh-users/zsh-autosuggestions ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions
+```
+
+---
+
+## 📖 Useful Commands
+
+### Show All Aliases
+
+```bash
+aliases  # or show-aliases
+```
+
+### Check Installed Versions
+
+```bash
+node --version
+npm --version
+docker --version
+java --version
+git --version
+zsh --version
+sdk version  # SDKMAN version
+google-chrome --version  # or chrome --version
+brave-browser --version
+firefox --version
+steam --version 2>/dev/null || echo "Steam installed"
+spotify --version 2>/dev/null || echo "Spotify installed"
+discord --version 2>/dev/null || echo "Discord installed"
+obs --version 2>/dev/null || echo "OBS Studio installed"
+nordvpn --version
+```
+
+### Clean Up Docker
+
+```bash
+docker system prune -a  # Remove unused images, containers, networks
+```
+
+### Update Everything
+
+```bash
+# System
+sudo apt update && sudo apt upgrade -y
+
+# Node.js globals
+npm update -g
+
+# Oh My Zsh
+omz update
+```
+
+---
+
+## 🤝 Contributing
+
+This is a personal dotfiles repo, but feel free to:
+
+- Fork it and adapt to your needs
+- Open issues for bugs
+- Suggest improvements via PR
+
+---
+
+## 📝 License
+
+MIT - Use freely, modify as needed.
+
+---
+
+## 🙏 Credits
+
+Built with these amazing tools:
+
+- [Oh My Zsh](https://ohmyz.sh/)
+- [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
+- [NVM](https://github.com/nvm-sh/nvm)
+- [SDKMAN](https://sdkman.io/)
+- [Docker](https://www.docker.com/)
+- [Android Studio](https://developer.android.com/studio)
+- [DBeaver](https://dbeaver.io/)
+- And many more open-source projects!
+
+---
+
+**Happy coding! 🚀**

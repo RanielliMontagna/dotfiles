@@ -1,0 +1,111 @@
+# Git Configuration Template
+# After installation, customize with your details:
+# git config --global user.name "Your Name"
+# git config --global user.email "your.email@example.com"
+
+[user]
+    # These will be empty by default - set them after installation
+    # name = Your Name
+    # email = your.email@example.com
+
+[core]
+    editor = vim
+    autocrlf = input
+    # Ignore file permissions changes
+    filemode = false
+
+[init]
+    # Default branch name for new repositories
+    defaultBranch = main
+
+[pull]
+    rebase = false
+
+[push]
+    # Push only the current branch
+    default = current
+    # Automatically set up remote tracking
+    autoSetupRemote = true
+
+[fetch]
+    # Automatically prune deleted remote branches
+    prune = true
+
+[alias]
+    # Short status
+    s = status -s
+    
+    # Pretty log
+    lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+    
+    # Show last commit
+    last = log -1 HEAD --stat
+    
+    # Undo last commit but keep changes
+    undo = reset HEAD~1 --mixed
+    
+    # Amend last commit
+    amend = commit --amend --no-edit
+    
+    # List branches sorted by last modified
+    branches = branch -a --sort=-committerdate
+    
+    # Show current branch
+    current = rev-parse --abbrev-ref HEAD
+    
+    # Checkout
+    co = checkout
+    
+    # Commit
+    ci = commit
+    
+    # Branch
+    br = branch
+    
+    # Pull with rebase
+    up = pull --rebase
+    
+    # Clean merged branches
+    cleanup = "!git branch --merged | grep -v '\\*\\|main\\|master\\|develop' | xargs -n 1 git branch -d"
+
+[color]
+    ui = auto
+
+[color "branch"]
+    current = yellow reverse
+    local = yellow
+    remote = green
+
+[color "diff"]
+    meta = yellow bold
+    frag = magenta bold
+    old = red bold
+    new = green bold
+
+[color "status"]
+    added = green
+    changed = yellow
+    untracked = cyan
+
+[diff]
+    # Better diff algorithm
+    algorithm = histogram
+    # Show moved code in different color
+    colorMoved = zebra
+
+[merge]
+    # Include summaries of merged commits in newly created merge commit messages
+    log = true
+    # Use VSCode as merge tool (if installed)
+    tool = vscode
+
+[mergetool "vscode"]
+    cmd = code --wait $MERGED
+
+[credential]
+    # Cache credentials for 1 hour
+    helper = cache --timeout=3600
+
+[help]
+    # Automatically correct and execute mistyped commands after 2 seconds
+    autocorrect = 20
