@@ -161,4 +161,4 @@ extract() {
 # ============================================================================
 
 echo "🚀 Welcome to your dev environment!"
-echo "📝 Run 'aliases' to see available shortcuts"
+echo "📝 Run 'alias' to see available shortcuts"
