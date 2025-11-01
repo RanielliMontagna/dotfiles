@@ -18,6 +18,7 @@ Automated setup for a fresh **Zorin OS** machine. Run **one command** after inst
 - ☕ **Java SDK** - Versions 8, 11, 17, LTS via SDKMAN (always installed)
 - 🛠️ **Dev tools** - Android Studio, DBeaver, Postman (always installed)
 - 🌐 **Applications** - Chrome, Brave, Firefox, Steam, Spotify, Discord, OBS Studio, NordVPN, Bitwarden (always installed)
+- 🎨 **Dark theme** - Complete visual customization with dark themes, icons, fonts, and GNOME extensions
 - 🔧 **Extras** - GitHub CLI, database clients (optional)
 - 📦 **Modular scripts** - Organized by function, easy to customize
 - 📚 **Well documented** - AI-friendly docs with architecture and version info
@@ -122,6 +123,19 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
   - NordVPN (VPN service)
 - **Security**:
   - Bitwarden (password manager)
+
+### Visual Customization (Always Installed)
+
+- **Dark Theme**: Complete dark theme setup for Zorin OS/GNOME
+  - GTK themes: Adwaita Dark, Arc Dark, Yaru Dark
+  - Icon themes: Papirus Dark
+  - System-wide dark color scheme
+- **Custom Fonts**:
+  - Inter (modern interface font)
+  - JetBrains Mono (monospace for terminal/editors)
+- **Wallpaper**: Automatic dark wallpaper configuration
+- **GNOME Terminal**: Pre-configured dark profile with Nord theme colors
+- **GNOME Extensions**: Extension Manager + system monitoring setup (Vitals, Clipboard Indicator)
 
 ### Extra Tools (Optional)
 
@@ -252,9 +266,38 @@ nordvpn connect
 nordvpn status
 ```
 
-### 7. (Optional) Log Out and Back In
+### 7. Dark Theme Customization
 
-Required for Docker group permissions and NordVPN to take effect.
+The system is automatically configured with a dark theme! You may need to:
+
+```bash
+# Restart GNOME Shell to apply all changes (optional)
+# Press Alt+F2, type 'r' and press Enter
+
+# Or log out and log back in for full theme application
+```
+
+**Wallpaper**: Place your custom dark wallpaper at:
+
+```
+dotfiles/assets/wallpapers/background.jpg
+```
+
+Supported formats: `.jpg`, `.jpeg`, `.png`, `.webp`
+
+**GNOME Extensions**: Install additional extensions:
+
+- Open Extension Manager from Activities
+- Install recommended extensions like Vitals, Clipboard Indicator, etc.
+- Extensions are automatically configured when installed
+
+### 8. (Optional) Log Out and Back In
+
+Required for:
+
+- Docker group permissions
+- NordVPN to take effect
+- Full dark theme application (some settings need a session restart)
 
 ---
 

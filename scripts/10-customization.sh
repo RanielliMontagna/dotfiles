@@ -244,21 +244,70 @@ configure_gnome_appearance() {
         return 0
     fi
     
-    print_info "Configuring GNOME appearance settings..."
+    print_info "Configuring GNOME/Zorin appearance settings for dark theme..."
     
-    # Set dark theme preference
-    set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'Adwaita-dark'" || \
-    set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'Arc-Dark'" || true
+    # Enable dark mode for applications (this affects many GTK apps)
+    set_gnome_setting "org.gnome.desktop.interface" "color-scheme" "'prefer-dark'" || true
+    print_success "Dark color scheme enabled"
     
-    # Set icon theme
-    set_gnome_setting "org.gnome.desktop.interface" "icon-theme" "'Papirus-Dark'" || \
-    set_gnome_setting "org.gnome.desktop.interface" "icon-theme" "'Papirus'" || true
+    # Set GTK theme (try multiple dark themes in order of preference)
+    print_info "Setting GTK theme to dark..."
+    if set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'Adwaita-dark'"; then
+        print_success "GTK theme set to Adwaita-dark"
+    elif set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'Arc-Dark'"; then
+        print_success "GTK theme set to Arc-Dark"
+    elif set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'Yaru-dark'"; then
+        print_success "GTK theme set to Yaru-dark"
+    else
+        print_warning "Could not set GTK theme, may need to set manually"
+    fi
+    
+    # Set GNOME Shell theme (for top bar and shell UI)
+    print_info "Setting GNOME Shell theme to dark..."
+    if command -v dconf &> /dev/null; then
+        # Check if User Themes extension is needed for shell theming
+        # For Zorin/GNOME, the shell typically uses the system theme
+        # The color-scheme setting should handle most of it
+        # But we can also try to set shell theme if User Themes extension is installed
+        if gnome-extensions list 2>/dev/null | grep -q "user-theme"; then
+            dconf write /org/gnome/shell/extensions/user-theme/name "'Adwaita-dark'" 2>/dev/null || true
+            print_info "User Themes extension detected, shell theme configured"
+        fi
+        # Most modern GNOME versions (40+) use color-scheme for shell automatically
+        print_info "Shell theme will follow system color scheme (dark)"
+    fi
+    
+    # Set icon theme (prefer dark variant)
+    print_info "Setting icon theme to dark..."
+    if set_gnome_setting "org.gnome.desktop.interface" "icon-theme" "'Papirus-Dark'"; then
+        print_success "Icon theme set to Papirus-Dark"
+    elif set_gnome_setting "org.gnome.desktop.interface" "icon-theme" "'Papirus'"; then
+        print_success "Icon theme set to Papirus"
+    elif set_gnome_setting "org.gnome.desktop.interface" "icon-theme" "'Yaru-dark'"; then
+        print_success "Icon theme set to Yaru-dark"
+    else
+        print_warning "Could not set icon theme"
+    fi
     
     # Set cursor theme (use default dark cursor if available)
-    set_gnome_setting "org.gnome.desktop.interface" "cursor-theme" "'Adwaita'" || true
+    set_gnome_setting "org.gnome.desktop.interface" "cursor-theme" "'Adwaita'" || \
+    set_gnome_setting "org.gnome.desktop.interface" "cursor-theme" "'DMZ-White'" || true
     
-    # Enable dark mode for applications
-    set_gnome_setting "org.gnome.desktop.interface" "color-scheme" "'prefer-dark'" || true
+    # Zorin-specific settings (if available)
+    if command -v dconf &> /dev/null; then
+        print_info "Configuring Zorin OS specific dark theme settings..."
+        # Zorin appearance theme (check if schema exists)
+        dconf write /org/zorin/desktop/interface/gtk-theme "'Adwaita-dark'" 2>/dev/null || true
+        dconf write /org/zorin/desktop/interface/icon-theme "'Papirus-Dark'" 2>/dev/null || true
+    fi
+    
+    # Set dark theme for text editor and other default apps
+    if command -v dconf &> /dev/null; then
+        # Gedit dark theme preference
+        dconf write /org/gnome/gedit/preferences/editor/scheme "'classic-dark'" 2>/dev/null || true
+        # Nautilus (file manager) dark theme
+        dconf write /org/gnome/nautilus/preferences/use-dark-theme "true" 2>/dev/null || true
+    fi
     
     # Set font (try to use Inter if installed, fallback to default)
     local current_font
@@ -542,14 +591,21 @@ configure_system_extensions() {
     if command -v gnome-extensions &> /dev/null; then
         print_info "Checking installed extensions..."
         
+        # Enable User Themes extension if installed (needed for custom shell themes)
+        if gnome-extensions list 2>/dev/null | grep -q "user-theme"; then
+            gnome-extensions enable user-theme@gnome-shell-extensions.gcampax.github.com 2>/dev/null || \
+            gnome-extensions enable user-theme@gnome-shell-extensions.gcampax.github.com 2>/dev/null || true
+            print_success "User Themes extension enabled (allows custom shell themes)"
+        fi
+        
         # Enable clipboard indicator if installed
-        if gnome-extensions list | grep -q "clipboard-indicator"; then
+        if gnome-extensions list 2>/dev/null | grep -q "clipboard-indicator"; then
             gnome-extensions enable clipboard-indicator@tudmotu.com 2>/dev/null || true
             print_success "Clipboard Indicator enabled"
         fi
         
         # Enable Vitals if installed
-        if gnome-extensions list | grep -q "Vitals"; then
+        if gnome-extensions list 2>/dev/null | grep -q "Vitals"; then
             gnome-extensions enable Vitals@CoreCoding.com 2>/dev/null || true
             print_success "Vitals enabled"
             

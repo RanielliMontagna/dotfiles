@@ -36,13 +36,18 @@ dotfiles/
 │   ├── 06-java.sh            # Java SDK via SDKMAN (always installed)
 │   ├── 07-dev-tools.sh      # Android Studio, DBeaver, Postman (always installed)
 │   ├── 08-applications.sh   # Browsers, Steam, media apps, NordVPN (always installed)
-│   └── 09-extras.sh          # Python, GitHub CLI, databases (optional)
+│   ├── 09-extras.sh          # Python, GitHub CLI, databases (optional)
+│   └── 10-customization.sh   # Visual customization (dark theme, extensions, fonts)
 ├── dotfiles/                 # Configuration files (symlinked to ~/)
 │   ├── .zshrc               # Zsh configuration with plugins and theme
 │   ├── .gitconfig           # Git aliases and sensible defaults
 │   └── .aliases             # Shell aliases organized by category
+├── assets/                  # Visual assets for customization
+│   └── wallpapers/          # Wallpaper directory
+│       └── background.jpg   # Custom dark wallpaper (optional)
 ├── PROJECT.md               # This file (AI context)
 ├── README.md                 # User documentation
+├── IMPROVEMENTS.md          # Future improvements backlog
 ├── package.json             # Node.js package info (for release-please)
 └── test.sh                  # Test script
 ```
@@ -149,7 +154,7 @@ fi
 - Verifies internet connectivity before proceeding
 - Automatically renews sudo during long installations
 - Centralized apt-get update (optimization)
-- Executes scripts 01-08 always
+- Executes scripts 01-08 and 10 always
 - Prompts user for script 09 (Extras)
 - Sources `scripts/common.sh` for shared functions
 - Provides colored output (info, success, warning, error)
@@ -460,6 +465,70 @@ fi
 
 ---
 
+### 10-customization.sh
+
+**Purpose**: Visual customization for Zorin OS with dark theme (always installed).
+
+**Installs & Configures**:
+
+- **GTK Themes**:
+  - `arc-theme` - Popular dark GTK theme
+  - `adwaita-icon-theme` - Includes Adwaita Dark theme
+  - Configures system to use dark themes (Adwaita Dark, Arc Dark, Yaru Dark)
+- **Icon Themes**:
+  - `papirus-icon-theme` - Dark icon set (Papirus Dark)
+  - Configures Papirus Dark as default icon theme
+- **Custom Fonts**:
+  - **Inter** - Modern interface font (downloaded from GitHub)
+  - **JetBrains Mono** - Monospace font for terminal/editors (downloaded from GitHub)
+  - Updates font cache and configures fonts system-wide
+- **GNOME Appearance**:
+  - Sets `color-scheme` to `prefer-dark` for GTK applications
+  - Configures GTK theme, icon theme, cursor theme
+  - Sets fonts (Inter for interface, JetBrains Mono for monospace)
+  - Configures Zorin OS specific dark theme settings
+  - Configures Nautilus (file manager) and Gedit to use dark theme
+- **GNOME Terminal**:
+  - Creates dark profile with Nord theme colors
+  - Configures background, foreground, cursor, and palette colors
+  - Sets JetBrains Mono as terminal font
+- **Wallpaper**:
+  - Automatically configures wallpaper from `assets/wallpapers/background.jpg`
+  - Copies to `~/Pictures/` and sets via gsettings
+  - Supports multiple formats (jpg, jpeg, png, webp)
+- **GNOME Extensions**:
+  - Installs `gnome-shell-extension-manager` for easy extension management
+  - Configures system monitoring extensions (Vitals, Clipboard Indicator)
+  - Provides installation instructions for recommended extensions
+  - Auto-enables and configures extensions if already installed
+
+**Configuration**:
+
+- Uses `gsettings` for GNOME settings
+- Uses `dconf` for advanced configuration (terminal, extensions)
+- Detects GNOME environment automatically
+- Handles both X11 and Wayland display servers
+
+**Idempotency**:
+
+- Checks if themes/packages are installed before installing
+- Checks if fonts exist before downloading
+- Checks if wallpaper file exists before copying
+- Verifies GNOME environment before configuring
+- Safe to run multiple times
+
+**Source**:
+
+- Themes and icons: Ubuntu/Debian repositories
+- Fonts: GitHub releases (Inter, JetBrains Mono)
+- Extensions: Extension Manager or extensions.gnome.org
+
+**Note**: This script always runs (not optional) to ensure consistent dark theme across the system.
+
+**Note**: Uses `common.sh` functions for downloads, caching, and APT optimization. Some settings may require logout/login to fully apply.
+
+---
+
 ## Configuration Files
 
 ### dotfiles/.zshrc
@@ -750,9 +819,10 @@ When helping with this project:
 All core components implemented:
 
 - ✅ Bootstrap orchestration script
-- ✅ All installation scripts (01-08 always; 09 optional)
+- ✅ All installation scripts (01-08, 10 always; 09 optional)
+- ✅ Visual customization (dark theme, fonts, extensions)
 - ✅ Configuration files (.zshrc, .gitconfig, .aliases)
-- ✅ Documentation (README.md, PROJECT.md)
+- ✅ Documentation (README.md, PROJECT.md, IMPROVEMENTS.md)
 
 **Version Management**: Uses `release-please` for automatic changelog generation on releases to main branch.
 

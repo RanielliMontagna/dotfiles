@@ -18,65 +18,83 @@ Melhorias de alta e média prioridade já implementadas:
 - ✅ Otimização de apt-get (update centralizado)
 - ✅ Validação de arquitetura
 - ✅ Validação de checksums (quando disponível)
+- ✅ **Personalização Visual do Sistema (Tema Dark)** - Script `10-customization.sh` implementado
 
 ---
 
 ## 🔥 Melhorias de Alta Prioridade
 
-### 1. Personalização Visual do Sistema (Tema Dark)
+### 1. ✅ Personalização Visual do Sistema (Tema Dark) - IMPLEMENTADO
 
 **Objetivo**: Criar um sistema mais dark que combine com o estilo pessoal e deixe a interface visualmente atraente.
 
 #### 🎨 Temas e Aparência
 
-**Melhorias**:
+**Status**: ✅ **IMPLEMENTADO**
 
-- **Temas GTK**: Instalar e configurar tema dark personalizado (ex: Adwaita Dark, Arc Dark, Dracula, Nord, One Dark)
-- **Ícones**: Configurar conjunto de ícones dark (ex: Papirus Dark, Numix Circle Dark, Tela Dark)
-- **Fontes**: Configurar fontes system-wide (ex: Inter, Fira Sans, SF Pro, JetBrains Mono)
-- **Wallpaper**: Definir background padrão com tema dark (com opção de slideshow automático)
-- **Cores de acento**: Configurar cor de destaque do sistema (paleta consistente)
+**Melhorias implementadas**:
+
+- ✅ **Temas GTK**: Instala e configura temas dark (Adwaita Dark, Arc Dark, Yaru Dark)
+- ✅ **Ícones**: Instala e configura Papirus Dark (com fallback para Papirus e Yaru Dark)
+- ✅ **Fontes**: Instala e configura Inter e JetBrains Mono system-wide
+- ✅ **Wallpaper**: Configura automaticamente wallpaper dark de `assets/wallpapers/background.jpg`
+- ✅ **Cores de acento**: Configura color-scheme prefer-dark para aplicações GTK
+- ✅ **Zorin OS específico**: Configura temas específicos do Zorin OS
 
 #### 🖥️ Terminal e Shell
 
-**Melhorias**:
+**Status**: ✅ **IMPLEMENTADO**
 
-- Perfil de cores dark personalizado no terminal (GNOME Terminal/Tilix)
-- Esquema de cores consistente entre terminal e Powerlevel10k
-- Configurar transparência/blur no terminal (se suportado)
-- Cores de syntax highlighting consistentes em todos os editores
+**Melhorias implementadas**:
+
+- ✅ Perfil de cores dark personalizado no GNOME Terminal (tema Nord)
+- ✅ Configuração automática de paleta de cores dark
+- ✅ Fonte JetBrains Mono configurada no terminal
+- ⚠️ Transparência/blur: Não implementado (requer extensões adicionais)
 
 #### 🎭 Extensões GNOME (Zorin OS)
 
-**Melhorias**:
+**Status**: ✅ **PARCIALMENTE IMPLEMENTADO**
 
-- **Dash to Dock/Dock**: Configurar dock customizado com tema dark
-- **Blur My Shell**: Aplicar efeitos de blur e transparência
-- **User Themes**: Permitir uso de temas customizados
-- **Clipboard Indicator**: Indicador de área de transferência
-- **GSConnect**: Integração com Android
-- **AppIndicator**: Suporte completo a ícones de sistema
-- **Caffeine**: Desabilitar suspensão durante uso
-- **Coverflow Alt-Tab**: Visualização melhorada ao alternar janelas
-- **Just Perfection**: Controles avançados de UI do GNOME
-- **Dash to Panel**: Transformar dock em painel estilo Windows/macOS
+**Melhorias implementadas**:
+
+- ✅ **Extension Manager**: Instala automaticamente `gnome-shell-extension-manager`
+- ✅ **Clipboard Indicator**: Configuração e instruções de instalação
+- ✅ **Vitals**: Configuração completa para mostrar temperatura, CPU, memória, rede e bateria
+- ✅ **User Themes**: Habilita automaticamente se instalado
+- ✅ **Sistema de monitoramento**: Configuração para mostrar informações do sistema na barra superior
+- ⚠️ **Outras extensões**: Instruções e recomendações fornecidas, mas instalação manual via Extension Manager
+
+**Melhorias pendentes**:
+
+- ⏳ Dash to Dock/Dock: Instruções fornecidas, mas não instalado automaticamente
+- ⏳ Blur My Shell: Instruções fornecidas, mas não instalado automaticamente
+- ⏳ GSConnect, AppIndicator, Caffeine, etc.: Instruções fornecidas
 
 #### 🎬 Animações e Efeitos
 
-**Melhorias**:
+**Status**: ⚠️ **NÃO IMPLEMENTADO**
 
-- Configurar velocidades de animação (acelerar/reduzir)
-- Efeitos de transição suaves entre workspaces
-- Configurar blur e transparência em menus e painéis
-- Efeitos visuais em janelas (sombra, bordas arredondadas)
+**Melhorias pendentes**:
+
+- ⏳ Configurar velocidades de animação (acelerar/reduzir)
+- ⏳ Efeitos de transição suaves entre workspaces
+- ⏳ Configurar blur e transparência em menus e painéis
+- ⏳ Efeitos visuais em janelas (sombra, bordas arredondadas)
+
+**Nota**: Estas melhorias requerem extensões GNOME específicas (como Blur My Shell) que podem ser instaladas manualmente via Extension Manager.
 
 #### 🔔 Tela de Login (GDM)
 
-**Melhorias**:
+**Status**: ⚠️ **NÃO IMPLEMENTADO**
 
-- Configurar wallpaper da tela de login (lock screen)
-- Aplicar tema dark no GDM
-- Customizar aparência do seletor de usuário
+**Melhorias pendentes**:
+
+- ⏳ Configurar wallpaper da tela de login (lock screen)
+- ⏳ Aplicar tema dark no GDM
+- ⏳ Customizar aparência do seletor de usuário
+
+**Nota**: Configuração do GDM requer permissões de sistema avançadas e pode variar entre versões do GNOME/Zorin.
 
 ---
 
