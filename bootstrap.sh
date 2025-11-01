@@ -203,15 +203,99 @@ main() {
     
     print_header "✨ Setup Complete!"
     print_success "Your development environment is ready!"
-    print_info "Please restart your terminal or run: source ~/.zshrc"
+    
+    # Show installation summary
+    echo -e "\n${BLUE}════════════════════════════════════════════════════════════${NC}"
+    echo -e "${BLUE}📋 Installation Summary${NC}"
+    echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}\n"
+    
+    # Collect installed versions
+    echo -e "${GREEN}✓ Core Tools:${NC}"
+    if command -v git &> /dev/null; then
+        echo "  • Git: $(git --version 2>/dev/null | cut -d' ' -f3)"
+    fi
+    if command -v zsh &> /dev/null; then
+        echo "  • Zsh: $(zsh --version 2>/dev/null | cut -d' ' -f2)"
+    fi
+    if command -v node &> /dev/null; then
+        echo "  • Node.js: $(node --version)"
+        echo "  • npm: $(npm --version)"
+        if command -v yarn &> /dev/null; then
+            echo "  • Yarn: $(yarn --version)"
+        fi
+        if command -v pnpm &> /dev/null; then
+            echo "  • pnpm: $(pnpm --version)"
+        fi
+        if command -v bun &> /dev/null; then
+            echo "  • Bun: $(bun --version)"
+        fi
+    fi
+    
+    echo -e "\n${GREEN}✓ Code Editors:${NC}"
+    if command -v code &> /dev/null; then
+        echo "  • VS Code: $(code --version 2>/dev/null | head -n1)"
+    fi
+    if command -v cursor &> /dev/null || dpkg -l 2>/dev/null | grep -q "^ii.*cursor"; then
+        if command -v cursor &> /dev/null; then
+            echo "  • Cursor: $(cursor --version 2>/dev/null || echo 'installed')"
+        else
+            echo "  • Cursor: installed"
+        fi
+    fi
+    
+    echo -e "\n${GREEN}✓ Development Tools:${NC}"
+    if command -v docker &> /dev/null; then
+        echo "  • Docker: $(docker --version 2>/dev/null | cut -d' ' -f3 | cut -d',' -f1)"
+    fi
+    if command -v java &> /dev/null; then
+        echo "  • Java: $(java -version 2>&1 | head -n1 | cut -d'"' -f2)"
+    fi
+    if command -v sdk &> /dev/null; then
+        echo "  • SDKMAN: $(sdk version 2>/dev/null | head -n1 | cut -d' ' -f3)"
+    fi
+    
+    echo -e "\n${GREEN}✓ Applications:${NC}"
+    if command -v google-chrome &> /dev/null || command -v chrome &> /dev/null; then
+        echo "  • Google Chrome: installed"
+    fi
+    if command -v brave-browser &> /dev/null; then
+        echo "  • Brave Browser: installed"
+    fi
+    if command -v firefox &> /dev/null; then
+        echo "  • Firefox: $(firefox --version 2>/dev/null || echo 'installed')"
+    fi
+    if command -v spotify &> /dev/null; then
+        echo "  • Spotify: installed"
+    fi
+    if command -v discord &> /dev/null; then
+        echo "  • Discord: installed"
+    fi
+    if command -v nordvpn &> /dev/null; then
+        echo "  • NordVPN: installed"
+    fi
+    if command -v bitwarden &> /dev/null || dpkg -l 2>/dev/null | grep -q "^ii.*bitwarden"; then
+        echo "  • Bitwarden: installed"
+    fi
+    
+    echo -e "\n${GREEN}✓ Configuration:${NC}"
+    echo "  • Shell: Zsh with Oh My Zsh and Powerlevel10k"
+    echo "  • Git: Pre-configured for ~/www/personal/ projects"
+    if [[ -d "$HOME/www/personal" ]]; then
+        echo "  • Project directory: ~/www/personal/ created"
+    fi
     
     # Show next steps
-    echo -e "\n${YELLOW}Next steps:${NC}"
-    echo "1. Restart your terminal"
-    echo "2. Configure git with your details:"
-    echo "   git config --global user.name \"Your Name\""
-    echo "   git config --global user.email \"your.email@example.com\""
-    echo "3. Review and customize ~/.zshrc if needed"
+    echo -e "\n${BLUE}════════════════════════════════════════════════════════════${NC}"
+    echo -e "${YELLOW}📌 Next Steps:${NC}"
+    echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}\n"
+    echo "1. Restart your terminal or run: ${GREEN}source ~/.zshrc${NC}"
+    echo "2. Configure Powerlevel10k theme: ${GREEN}p10k configure${NC}"
+    echo "3. Git is already configured for personal projects in ~/www/personal/"
+    echo ""
+    print_info "Your personal Git config uses:"
+    echo "  • Name: Ranielli Montagna"
+    echo "  • Email: raniellimontagna@hotmail.com"
+    echo "  • SSH: Enabled for GitHub"
     echo ""
 }
 
