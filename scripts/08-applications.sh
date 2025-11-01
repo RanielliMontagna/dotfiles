@@ -221,31 +221,58 @@ main() {
         if command -v ensure_apt_updated &> /dev/null; then
             ensure_apt_updated
         else
-            sudo apt-get update
+            sudo apt-get update || true
         fi
-        sudo apt-get install -y curl
+        sudo apt-get install -y curl 2>/dev/null || {
+            print_warning "Could not install curl, trying to continue..."
+        }
         
-        # Download and run NordVPN installer
+        # Download NordVPN installer script first (safer than piping curl to sh)
         print_info "Downloading NordVPN installer..."
+        local NORDVPN_INSTALLER="/tmp/nordvpn-install.sh"
         
-        # The installer script from NordVPN (official method)
-        # This downloads and executes the installer in one step
-        if sh <(curl -sSf https://downloads.nordcdn.com/apps/linux/install.sh); then
-            # Wait a moment for installation to complete
-            sleep 2
+        # Use safe download with retries
+        if safe_curl_download_with_cache "https://downloads.nordcdn.com/apps/linux/install.sh" "$NORDVPN_INSTALLER" 3 300 30; then
+            # Make executable
+            chmod +x "$NORDVPN_INSTALLER" 2>/dev/null || true
             
-            # Verify installation
-            if command -v nordvpn &> /dev/null; then
-                print_success "NordVPN installed"
-                print_info "To login to NordVPN, run: nordvpn login"
-                print_info "To connect, run: nordvpn connect"
-                print_warning "Note: You may need to log out and back in for NordVPN to work properly"
+            # Run installer with better error handling
+            print_info "Running NordVPN installer..."
+            if bash "$NORDVPN_INSTALLER" 2>&1; then
+                # Wait a moment for installation to complete
+                sleep 3
+                
+                # Verify installation
+                if command -v nordvpn &> /dev/null; then
+                    print_success "NordVPN installed successfully"
+                    print_info "To login to NordVPN, run: nordvpn login"
+                    print_info "To connect, run: nordvpn connect"
+                    print_warning "Note: You may need to log out and back in for NordVPN to work properly"
+                else
+                    # Check if package was installed but command not in PATH
+                    sleep 2
+                    if command -v nordvpn &> /dev/null || is_installed "nordvpn"; then
+                        print_success "NordVPN package installed (may need logout/login to activate)"
+                        print_info "To login to NordVPN, run: nordvpn login"
+                    else
+                        print_warning "NordVPN installation completed but nordvpn command not found"
+                        print_info "This may be normal - try logging out and back in, then run: nordvpn login"
+                    fi
+                fi
             else
-                print_warning "NordVPN installation may have failed. Please check manually."
-                print_info "You can try: sh <(curl -sSf https://downloads.nordcdn.com/apps/linux/install.sh)"
+                print_warning "NordVPN installer script failed to execute properly"
+                print_info "You can try installing manually:"
+                print_info "  sh <(curl -sSf https://downloads.nordcdn.com/apps/linux/install.sh)"
+                print_info "Or visit: https://nordvpn.com/download/linux/"
             fi
+            
+            # Cleanup
+            rm -f "$NORDVPN_INSTALLER" 2>/dev/null || true
         else
-            print_warning "Could not install NordVPN automatically. Please install manually from https://nordvpn.com/download/linux/"
+            print_warning "Could not download NordVPN installer script"
+            print_info "This might be due to network issues. You can try installing manually:"
+            print_info "  sh <(curl -sSf https://downloads.nordcdn.com/apps/linux/install.sh)"
+            print_info "Or visit: https://nordvpn.com/download/linux/"
         fi
     fi
     
