@@ -102,7 +102,7 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 
 ### Applications (Always Installed)
 
-- **Browsers**: 
+- **Browsers**:
   - Google Chrome (latest stable)
   - Brave Browser (latest stable)
   - Firefox (latest from Ubuntu repos)
@@ -374,6 +374,38 @@ git clone https://github.com/RanielliMontagna/dotfiles.git
 cd dotfiles
 bash bootstrap.sh
 ```
+
+### Option 3: Testing a Specific Branch
+
+To test changes from a specific branch (e.g., before merging to main):
+
+**Method 1: Local Repository (Recommended for Development)**
+
+```bash
+# If you already have the repo cloned locally
+cd dotfiles
+git checkout fix/minor-adjustments  # or your branch name
+git pull origin fix/minor-adjustments
+bash bootstrap.sh  # Uses local files from current branch
+```
+
+**Method 2: Clone Specific Branch**
+
+```bash
+# Clone the specific branch
+git clone -b fix/minor-adjustments https://github.com/RanielliMontagna/dotfiles.git
+cd dotfiles
+bash bootstrap.sh
+```
+
+**Method 3: One-Line Install from Branch (Testing Only)**
+
+```bash
+# Download and run bootstrap.sh from a specific branch
+curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/fix/minor-adjustments/bootstrap.sh | bash
+```
+
+> ⚠️ **Warning**: Always review the code before running scripts from untested branches!
 
 ---
 

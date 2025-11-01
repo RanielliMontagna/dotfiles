@@ -26,9 +26,17 @@ print_success() {
     echo -e "${GREEN}✓${NC} $1"
 }
 
+print_error() {
+    echo -e "\033[0;31m✗\033[0m $1"
+}
+
 # Check if package is installed
 is_installed() {
-    dpkg -l "$1" 2>/dev/null | grep -q ^ii
+    local pkg="$1"
+    if ! command -v dpkg >/dev/null 2>&1; then
+        return 1
+    fi
+    dpkg -l "$pkg" 2>/dev/null | grep -q "^ii" || return 1
 }
 
 install_if_missing() {
@@ -42,6 +50,20 @@ install_if_missing() {
 }
 
 main() {
+    # Verify required commands exist
+    if ! command -v sudo >/dev/null 2>&1; then
+        print_error "sudo is not installed or not in PATH"
+        exit 1
+    fi
+    if ! command -v apt-get >/dev/null 2>&1; then
+        print_error "apt-get is not installed or not in PATH"
+        exit 1
+    fi
+    if ! command -v dpkg >/dev/null 2>&1; then
+        print_error "dpkg is not installed or not in PATH"
+        exit 1
+    fi
+    
     print_info "Updating package lists..."
     sudo apt-get update
     
