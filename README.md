@@ -22,6 +22,8 @@ Automated setup for a fresh **Zorin OS** machine. Run **one command** after inst
 - 📦 **Modular scripts** - Organized by function, easy to customize
 - 📚 **Well documented** - AI-friendly docs with architecture and version info
 - ⚡ **Always updated** - Uses LTS and latest stable versions from official sources
+- 🛡️ **Robust downloads** - Timeouts, retries, and connectivity checks prevent hanging
+- 🔐 **Automatic sudo renewal** - No password prompts during long installations
 
 ---
 
@@ -124,6 +126,19 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 - **Git tools**: GitHub CLI (gh)
 - **Databases**: PostgreSQL client, SQLite, Redis CLI
 - **HTTP**: HTTPie
+
+---
+
+## 🚀 Recent Improvements
+
+The project has been enhanced with **high-priority improvements** for better reliability:
+
+- ✅ **Download timeouts and retries** - All downloads now have timeouts (300-600s) and automatic retries (3 attempts) to prevent hanging
+- ✅ **Internet connectivity check** - Verifies connection before starting installation
+- ✅ **Automatic sudo renewal** - Keeps sudo credentials active during long installations
+- ✅ **Shared functions** - New `scripts/common.sh` provides reusable functions for all scripts, reducing code duplication
+
+These improvements make the installation process more robust and prevent common issues like hanging downloads or expired sudo passwords.
 
 ---
 

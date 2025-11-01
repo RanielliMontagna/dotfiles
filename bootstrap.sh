@@ -74,6 +74,38 @@ fi
 SCRIPTS_DIR="$DOTFILES_DIR/scripts"
 
 ###############################################################################
+# Load common functions
+###############################################################################
+
+# Source common.sh if available
+if [[ -f "$SCRIPTS_DIR/common.sh" ]]; then
+    source "$SCRIPTS_DIR/common.sh"
+else
+    # Fallback print functions if common.sh is not available
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    NC='\033[0m'
+    
+    print_info() {
+        echo -e "${BLUE}ℹ${NC} $1"
+    }
+    
+    print_success() {
+        echo -e "${GREEN}✓${NC} $1"
+    }
+    
+    print_error() {
+        echo -e "${RED}✗${NC} $1"
+    }
+    
+    print_warning() {
+        echo -e "${YELLOW}⚠${NC} $1"
+    }
+fi
+
+###############################################################################
 # Helper functions
 ###############################################################################
 
@@ -81,22 +113,6 @@ print_header() {
     echo -e "\n${BLUE}========================================${NC}"
     echo -e "${BLUE}$1${NC}"
     echo -e "${BLUE}========================================${NC}\n"
-}
-
-print_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}✗${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
-
-print_info() {
-    echo -e "${BLUE}ℹ${NC} $1"
 }
 
 # Check if running on Ubuntu/Zorin
@@ -159,10 +175,22 @@ main() {
     # Check OS compatibility
     check_os
     
+    # Check internet connectivity before proceeding
+    if ! check_internet; then
+        print_error "Internet connection is required for installation"
+        exit 1
+    fi
+    
     # Cache sudo password upfront to avoid interruptions during installation
     # This will prompt once at the beginning and cache for ~15 minutes
     print_info "Caching sudo credentials (you'll be asked for your password once)..."
     sudo -v
+    
+    # Start keeping sudo alive during long installations
+    if command -v keep_sudo_alive &> /dev/null || type keep_sudo_alive &> /dev/null 2>&1; then
+        keep_sudo_alive
+        print_info "Sudo will be renewed automatically during installation"
+    fi
     
     # Make sure all scripts are executable
     chmod +x "$SCRIPTS_DIR"/*.sh 2>/dev/null || true

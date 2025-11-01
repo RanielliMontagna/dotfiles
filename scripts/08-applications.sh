@@ -19,26 +19,33 @@
 
 set -e
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    # Fallback if common.sh not found
+    GREEN='\033[0;32m'
+    BLUE='\033[0;34m'
+    YELLOW='\033[1;33m'
+    NC='\033[0m'
+    
+    print_info() {
+        echo -e "${BLUE}[applications]${NC} $1"
+    }
+    
+    print_success() {
+        echo -e "${GREEN}✓${NC} $1"
+    }
+    
+    print_warning() {
+        echo -e "${YELLOW}⚠${NC} $1"
+    }
+fi
 
-print_info() {
-    echo -e "${BLUE}[applications]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
-
+# Alias for compatibility
 is_installed() {
-    dpkg -l "$1" 2>/dev/null | grep -q ^ii
+    is_package_installed "$1"
 }
 
 main() {
@@ -52,7 +59,7 @@ main() {
         
         # Download and install Chrome .deb
         CHROME_DEB="/tmp/google-chrome.deb"
-        curl -L -o "$CHROME_DEB" "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
+        safe_curl_download "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" "$CHROME_DEB" 3 300 30
         
         if [[ -f "$CHROME_DEB" ]]; then
             sudo dpkg -i "$CHROME_DEB" || sudo apt-get install -f -y
@@ -147,7 +154,7 @@ main() {
             
             # Alternative: Download .deb from Discord
             DISCORD_DEB="/tmp/discord.deb"
-            curl -L -o "$DISCORD_DEB" "https://discord.com/api/download?platform=linux&format=deb"
+            safe_curl_download "https://discord.com/api/download?platform=linux&format=deb" "$DISCORD_DEB" 3 300 30
             
             if [[ -f "$DISCORD_DEB" ]]; then
                 sudo dpkg -i "$DISCORD_DEB" || sudo apt-get install -f -y
@@ -235,7 +242,7 @@ main() {
             
             if [[ -n "$LATEST_RELEASE_URL" ]] && [[ "$LATEST_RELEASE_URL" != "null" ]]; then
                 print_info "Downloading Bitwarden from GitHub releases..."
-                curl -L -o "$BITWARDEN_DEB" "$LATEST_RELEASE_URL"
+                safe_curl_download "$LATEST_RELEASE_URL" "$BITWARDEN_DEB" 3 300 30
                 
                 if [[ -f "$BITWARDEN_DEB" ]] && [[ -s "$BITWARDEN_DEB" ]]; then
                     sudo dpkg -i "$BITWARDEN_DEB" || sudo apt-get install -f -y

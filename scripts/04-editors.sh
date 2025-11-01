@@ -12,23 +12,29 @@
 
 set -e
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-print_info() {
-    echo -e "${BLUE}[editors]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    # Fallback if common.sh not found
+    GREEN='\033[0;32m'
+    BLUE='\033[0;34m'
+    YELLOW='\033[1;33m'
+    NC='\033[0m'
+    
+    print_info() {
+        echo -e "${BLUE}[editors]${NC} $1"
+    }
+    
+    print_success() {
+        echo -e "${GREEN}✓${NC} $1"
+    }
+    
+    print_warning() {
+        echo -e "${YELLOW}⚠${NC} $1"
+    }
+fi
 
 main() {
     print_info "Installing code editors..."
@@ -95,7 +101,7 @@ main() {
         DOWNLOADED=false
         
         # Method 1: Try the official downloader endpoint (most common)
-        if curl -L --progress-bar --fail -o "$CURSOR_TEMP" "https://downloader.cursor.sh/linux/deb" 2>/dev/null; then
+        if safe_curl_download "https://downloader.cursor.sh/linux/deb" "$CURSOR_TEMP" 3 300 30; then
             # Verify it's a valid file (at least 1MB, which is reasonable for a .deb)
             if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]; then
                 DOWNLOADED=true
@@ -106,7 +112,7 @@ main() {
         if [[ "$DOWNLOADED" == "false" ]] && [[ "$ARCH" == "amd64" ]]; then
             print_info "Trying alternative download URL..."
             rm -f "$CURSOR_TEMP"
-            if curl -L --progress-bar --fail -o "$CURSOR_TEMP" "https://downloader.cursor.sh/linux/appImage/x64" 2>/dev/null; then
+            if safe_curl_download "https://downloader.cursor.sh/linux/appImage/x64" "$CURSOR_TEMP" 3 300 30; then
                 # Check if file is a .deb (AppImage endpoint might return .deb or .AppImage)
                 if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && (file "$CURSOR_TEMP" 2>/dev/null | grep -q "Debian" || [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]); then
                     DOWNLOADED=true

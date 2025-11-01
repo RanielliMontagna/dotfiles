@@ -27,6 +27,7 @@ This file provides context for AI agents (ChatGPT, Claude, etc.) to understand t
 dotfiles/
 ├── bootstrap.sh              # Main orchestration script
 ├── scripts/                  # Installation scripts (executed in order)
+│   ├── common.sh            # Shared functions (downloads, connectivity, sudo management)
 │   ├── 01-essentials.sh     # System tools, build essentials, CLI tools
 │   ├── 02-shell.sh          # Zsh + Oh My Zsh + Powerlevel10k + plugins
 │   ├── 03-nodejs.sh         # NVM + Node.js LTS + global npm packages
@@ -50,6 +51,51 @@ dotfiles/
 
 ---
 
+## Shared Functions (common.sh)
+
+**Purpose**: Provides reusable functions for all installation scripts to reduce code duplication and ensure consistency.
+
+**Key Functions**:
+
+- **Download Functions**:
+
+  - `safe_download()` - Universal download with timeout and retry (uses curl or wget)
+  - `safe_curl_download()` - Curl-specific download with timeout (300s), connect timeout (30s), and retry (3 attempts)
+  - `safe_wget_download()` - Wget-specific download with timeout and retry
+
+- **Connectivity**:
+
+  - `check_internet()` - Verifies internet connection by pinging multiple DNS servers (8.8.8.8, 1.1.1.1, 208.67.222.222)
+
+- **Sudo Management**:
+
+  - `keep_sudo_alive()` - Runs in background to automatically renew sudo credentials during long installations
+
+- **Utility Functions**:
+  - `is_command_available()` - Check if a command exists
+  - `is_package_installed()` - Check if a dpkg package is installed
+  - `is_directory()` / `is_file()` - File system checks
+  - `print_info()` / `print_success()` / `print_warning()` / `print_error()` - Colored output functions
+
+**Usage**: All scripts should source `common.sh` at the beginning:
+
+```bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+fi
+```
+
+**Benefits**:
+
+- ✅ Consistent download behavior with timeouts and retries
+- ✅ No hanging downloads on network failures
+- ✅ Automatic sudo renewal prevents password prompts during long installations
+- ✅ Reduced code duplication across scripts
+- ✅ Centralized error handling
+
+---
+
 ## Script Details
 
 ### bootstrap.sh
@@ -59,9 +105,12 @@ dotfiles/
 **Behavior**:
 
 - Checks OS compatibility (Zorin/Ubuntu)
+- **Checks internet connectivity** before proceeding (new)
+- **Renews sudo automatically** during long installations (new)
 - Executes scripts 01-08 always
 - Prompts user for script 09 (Extras)
 - Makes all scripts executable
+- Sources `scripts/common.sh` for shared functions
 - Provides colored output (info, success, warning, error)
 - Exits on error (`set -e`)
 
@@ -198,9 +247,11 @@ dotfiles/
 **Source**:
 
 - VS Code: Microsoft repository
-- Cursor: Official Cursor website (downloader.cursor.sh)
+- Cursor: Official Cursor website (downloader.cursor.sh) - **now uses `safe_curl_download()` with timeout and retry**
 
 **Note**: This script always runs (not optional) as both editors are essential for development.
+
+**Improvements**: Uses `safe_curl_download()` from `common.sh` for reliable downloads with automatic retries.
 
 ---
 
@@ -286,11 +337,13 @@ dotfiles/
 
 **Source**:
 
-- Android Studio: Snap or official Google download
-- DBeaver: Snap or official .deb
-- Postman: Snap or official download
+- Android Studio: Snap or official Google download - **now uses `safe_wget_download()` with timeout**
+- DBeaver: Snap or official .deb - **now uses `safe_curl_download()` with timeout and retry**
+- Postman: Snap or official download - **now uses `safe_curl_download()` with timeout and retry**
 
 **Note**: This script always runs (not optional) as these development tools are essential.
+
+**Improvements**: All downloads now use shared functions from `common.sh` with timeouts (300-600s), connection timeouts (30s), and automatic retries (3 attempts).
 
 ---
 
@@ -336,17 +389,19 @@ dotfiles/
 
 **Source**:
 
-- Chrome: Official Google download
+- Chrome: Official Google download - **now uses `safe_curl_download()` with timeout and retry**
 - Brave: Official Brave repository
 - Firefox: Ubuntu repositories
 - Steam: Snap store or Ubuntu repositories
 - Spotify: Snap store or official Spotify repository
-- Discord: Snap store or official Discord download
+- Discord: Snap store or official Discord download - **now uses `safe_curl_download()` with timeout and retry**
 - OBS Studio: Snap store or Ubuntu repositories
 - NordVPN: Official NordVPN installer
-- Bitwarden: Snap store or official Bitwarden download
+- Bitwarden: Snap store or official Bitwarden download - **now uses `safe_curl_download()` with timeout and retry**
 
 **Note**: This script always runs (not optional) as these applications are essential for daily use.
+
+**Improvements**: Downloads now use shared functions from `common.sh` with timeouts (300s), connection timeouts (30s), and automatic retries (3 attempts).
 
 ---
 
@@ -496,8 +551,24 @@ dotfiles/
    - No data loss during installation
 
 8. **Informative Output**:
+
    - Color-coded messages (info=blue, success=green, warning=yellow, error=red)
    - Clear status messages for each step
+
+9. **Robust Downloads**:
+
+   - All downloads use timeouts (300-600s) and connection timeouts (30s)
+   - Automatic retry logic (3 attempts by default)
+   - Prevents hanging on network failures
+
+10. **Connectivity Checks**:
+
+    - Verifies internet connection before starting installation
+    - Tests multiple DNS servers for reliability
+
+11. **Sudo Management**:
+    - Automatic renewal of sudo credentials during long installations
+    - Prevents password prompts mid-installation
 
 ---
 

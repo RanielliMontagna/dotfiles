@@ -13,23 +13,29 @@
 
 set -e
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-print_info() {
-    echo -e "${BLUE}[dev-tools]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    # Fallback if common.sh not found
+    GREEN='\033[0;32m'
+    BLUE='\033[0;34m'
+    YELLOW='\033[1;33m'
+    NC='\033[0m'
+    
+    print_info() {
+        echo -e "${BLUE}[dev-tools]${NC} $1"
+    }
+    
+    print_success() {
+        echo -e "${GREEN}✓${NC} $1"
+    }
+    
+    print_warning() {
+        echo -e "${YELLOW}⚠${NC} $1"
+    }
+fi
 
 main() {
     print_info "Installing development tools..."
@@ -60,8 +66,10 @@ main() {
             
             if [[ ! -d "$ANDROID_STUDIO_DIR" ]]; then
                 print_info "Downloading Android Studio..."
-                wget -O /tmp/android-studio.tar.gz "https://redirector.gvt1.com/edgedl/android/studio/ide-zips/${ANDROID_STUDIO_VERSION}/android-studio-${ANDROID_STUDIO_VERSION}-linux.tar.gz" 2>/dev/null || \
-                wget -O /tmp/android-studio.tar.gz "https://dl.google.com/dl/android/studio/ide-zips/latest/android-studio-linux.tar.gz"
+                # Try specific version first, fallback to latest
+                if ! safe_wget_download "https://redirector.gvt1.com/edgedl/android/studio/ide-zips/${ANDROID_STUDIO_VERSION}/android-studio-${ANDROID_STUDIO_VERSION}-linux.tar.gz" /tmp/android-studio.tar.gz 3 600; then
+                    safe_wget_download "https://dl.google.com/dl/android/studio/ide-zips/latest/android-studio-linux.tar.gz" /tmp/android-studio.tar.gz 3 600
+                fi
                 
                 sudo mkdir -p /opt
                 sudo tar -xzf /tmp/android-studio.tar.gz -C /opt
@@ -122,8 +130,11 @@ EOF
             
             # Download command-line tools
             CMDLINE_TOOLS_ZIP="/tmp/cmdline-tools.zip"
-            if curl -L -o "$CMDLINE_TOOLS_ZIP" "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip" 2>/dev/null || \
-               curl -L -o "$CMDLINE_TOOLS_ZIP" "https://dl.google.com/android/repository/commandlinetools-latest-linux.zip" 2>/dev/null; then
+            if ! safe_curl_download "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip" "$CMDLINE_TOOLS_ZIP" 3 300 30; then
+                safe_curl_download "https://dl.google.com/android/repository/commandlinetools-latest-linux.zip" "$CMDLINE_TOOLS_ZIP" 3 300 30
+            fi
+            
+            if [[ -f "$CMDLINE_TOOLS_ZIP" ]] && [[ -s "$CMDLINE_TOOLS_ZIP" ]]; then
                 unzip -q "$CMDLINE_TOOLS_ZIP" -d "$ANDROID_SDK_PATH/cmdline-tools"
                 mv "$ANDROID_SDK_PATH/cmdline-tools/cmdline-tools" "$ANDROID_SDK_PATH/cmdline-tools/latest" 2>/dev/null || true
                 rm -f "$CMDLINE_TOOLS_ZIP"
@@ -213,8 +224,9 @@ EOF
             
             # Download DBeaver .deb
             DBEAVER_DEB="/tmp/dbeaver.deb"
-            curl -L -o "$DBEAVER_DEB" "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" || \
-            curl -L -o "$DBEAVER_DEB" "https://github.com/dbeaver/dbeaver/releases/latest/download/dbeaver-ce_latest_amd64.deb"
+            if ! safe_curl_download "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" "$DBEAVER_DEB" 3 300 30; then
+                safe_curl_download "https://github.com/dbeaver/dbeaver/releases/latest/download/dbeaver-ce_latest_amd64.deb" "$DBEAVER_DEB" 3 300 30
+            fi
             
             if [[ -f "$DBEAVER_DEB" ]]; then
                 sudo dpkg -i "$DBEAVER_DEB" || sudo apt-get install -f -y
@@ -238,7 +250,7 @@ EOF
             print_warning "Snap not available, trying alternative installation..."
             
             # Try to install via apt if available
-            if curl -fsSL https://dl.pstmn.io/download/latest/linux64 -o /tmp/postman.tar.gz; then
+            if safe_curl_download "https://dl.pstmn.io/download/latest/linux64" /tmp/postman.tar.gz 3 300 30; then
                 sudo mkdir -p /opt
                 sudo tar -xzf /tmp/postman.tar.gz -C /opt
                 
