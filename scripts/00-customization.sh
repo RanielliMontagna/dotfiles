@@ -494,6 +494,40 @@ install_gnome_extensions() {
 }
 
 ###############################################################################
+# Reload GNOME Shell to load extensions
+###############################################################################
+
+reload_gnome_shell() {
+    # Try multiple methods to reload GNOME Shell
+    local reloaded=false
+    
+    # Method 1: busctl (most reliable for GNOME Shell restart)
+    if command -v busctl &> /dev/null; then
+        if busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting GNOME Shell...")' >/dev/null 2>&1; then
+            reloaded=true
+            sleep 2
+        fi
+    fi
+    
+    # Method 2: dbus-send (alternative method)
+    if [[ "$reloaded" == "false" ]] && command -v dbus-send &> /dev/null; then
+        if dbus-send --session --type=method_call --dest=org.gnome.Shell /org/gnome/Shell org.gnome.Shell.Eval string:'Meta.restart("Restarting...")' >/dev/null 2>&1; then
+            reloaded=true
+            sleep 2
+        fi
+    fi
+    
+    # Method 3: Kill and restart (more aggressive)
+    # Note: This is a fallback but may interrupt user work, so we skip it
+    
+    if [[ "$reloaded" == "true" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+###############################################################################
 # Configure System Extensions (Clipboard, System Monitor, etc.)
 ###############################################################################
 
@@ -578,6 +612,20 @@ install_extension_from_zip() {
             return 1
         fi
         
+        # Verify and fix UUID in metadata.json if needed
+        local metadata_uuid
+        metadata_uuid=$(grep -o '"uuid"[[:space:]]*:[[:space:]]*"[^"]*"' "$extension_dir/metadata.json" 2>/dev/null | sed 's/.*"uuid"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' || echo "")
+        if [[ -n "$metadata_uuid" ]] && [[ "$metadata_uuid" != "$extension_uuid" ]]; then
+            print_info "Fixing UUID in metadata.json: $metadata_uuid -> $extension_uuid"
+            sed -i "s/\"uuid\"[[:space:]]*:[[:space:]]*\"$metadata_uuid\"/\"uuid\": \"$extension_uuid\"/g" "$extension_dir/metadata.json" 2>/dev/null || true
+        fi
+        
+        # Set correct permissions for extension files
+        # Directories should be 755, files should be 644
+        chmod -R u+rwX,go+rX "$extension_dir" 2>/dev/null || true
+        find "$extension_dir" -type d -exec chmod 755 {} \; 2>/dev/null || true
+        find "$extension_dir" -type f -exec chmod 644 {} \; 2>/dev/null || true
+        
         rm -f "$zip_file" 2>/dev/null || true
         print_success "Extension $extension_uuid installed successfully"
         return 0
@@ -620,21 +668,40 @@ enable_extension() {
             return 0
         fi
         
-        # Add extension to list
-        # Handle empty list case
-        if [[ "$current_list" == "[]" ]] || [[ -z "$current_list" ]]; then
-            dconf write /org/gnome/shell/enabled-extensions "['$extension_uuid']" 2>/dev/null || true
+        # Add extension to list using a more robust method
+        # Parse the current list properly
+        local new_list=""
+        if [[ "$current_list" == "[]" ]] || [[ -z "$current_list" ]] || [[ "$current_list" == "@as []" ]]; then
+            # Empty list, start fresh
+            new_list="['$extension_uuid']"
         else
-            # Remove brackets and quotes, add new extension, then reformat
+            # Parse existing list - handle both ['ext1', 'ext2'] and @as ['ext1', 'ext2'] formats
             local clean_list
-            clean_list=$(echo "$current_list" | sed "s/^\[//; s/\]$//; s/'//g")
-            local new_list="['$clean_list','$extension_uuid']"
-            new_list=$(echo "$new_list" | sed "s/','/', '/g")  # Fix spacing
-            dconf write /org/gnome/shell/enabled-extensions "$new_list" 2>/dev/null || true
+            clean_list=$(echo "$current_list" | sed "s/^@as //; s/^\[//; s/\]$//; s/'//g" | tr -d ' ')
+            
+            if [[ -z "$clean_list" ]]; then
+                new_list="['$extension_uuid']"
+            else
+                # Build new list properly
+                new_list="['${clean_list//,/\', \'}, '$extension_uuid']"
+            fi
         fi
         
-        print_success "Extension $extension_uuid enabled via dconf"
-        return 0
+        # Write the new list
+        if dconf write /org/gnome/shell/enabled-extensions "$new_list" 2>/dev/null; then
+            print_success "Extension $extension_uuid enabled via dconf"
+            return 0
+        else
+            # Try alternative format
+            if [[ "$new_list" =~ \['.*'\] ]]; then
+                # Try with @as prefix (GNOME 42+)
+                local alt_list="@as $new_list"
+                if dconf write /org/gnome/shell/enabled-extensions "$alt_list" 2>/dev/null; then
+                    print_success "Extension $extension_uuid enabled via dconf (alt format)"
+                    return 0
+                fi
+            fi
+        fi
     fi
     
     print_warning "Could not enable extension $extension_uuid automatically"
@@ -678,6 +745,14 @@ configure_system_extensions() {
     fi
     
     print_info "Setting up system extensions..."
+    
+    # Fix permissions for all existing extensions (in case some have wrong permissions)
+    local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+    if [[ -d "$extensions_dir" ]]; then
+        print_info "Fixing permissions for existing extensions..."
+        find "$extensions_dir" -type d -exec chmod 755 {} \; 2>/dev/null || true
+        find "$extensions_dir" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    fi
     
     # Install Extension Manager if not available
     if ! command -v extension-manager &> /dev/null && ! is_installed "gnome-shell-extension-manager"; then
@@ -901,7 +976,16 @@ configure_system_extensions() {
         # Enable extension if installed
         if [[ "$install_success" == "true" ]]; then
             print_info "Enabling $extension_name..."
-            sleep 2
+            sleep 1
+            
+            # Ensure extension directory has correct permissions
+            local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+            local extension_dir="$extensions_dir/$extension_uuid"
+            if [[ -d "$extension_dir" ]]; then
+                chmod -R u+rwX,go+rX "$extension_dir" 2>/dev/null || true
+                find "$extension_dir" -type d -exec chmod 755 {} \; 2>/dev/null || true
+                find "$extension_dir" -type f -exec chmod 644 {} \; 2>/dev/null || true
+            fi
             
             if enable_extension "$extension_uuid"; then
                 print_success "$extension_name installed and enabled ✓"
@@ -967,9 +1051,14 @@ configure_system_extensions() {
     fi
     
     # Refresh GNOME Shell to load extensions
-    if command -v busctl &> /dev/null; then
-        print_info "Refreshing GNOME Shell to load extensions..."
-        busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting GNOME Shell...")' 2>/dev/null || true
+    print_info "Refreshing GNOME Shell to load extensions..."
+    if reload_gnome_shell; then
+        print_success "GNOME Shell reloaded"
+    else
+        print_warning "Could not automatically reload GNOME Shell"
+        print_info "Please restart GNOME Shell manually:"
+        print_info "   - Press Alt+F2, type 'r' and press Enter"
+        print_info "   - Or log out and log back in"
     fi
     
     print_info ""
@@ -980,10 +1069,42 @@ configure_system_extensions() {
     print_info "   - Dash to Panel (combines dash and top panel)"
     print_info "   - Vitals (temperature, CPU, memory, network, battery in top bar)"
     print_info ""
-    print_info "💡 If extensions don't appear:"
+    print_info "🔍 Verifying extensions..."
+    
+    # Verify extensions are properly installed and enabled
+    local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+    local verified_count=0
+    local extensions_to_check=("clipboard-indicator@tudmotu.com" "blur-my-shell@aunetx" "caffeine@patapon.info" "dash-to-panel@jderose9.github.com" "Vitals@CoreCoding.com")
+    
+    for ext_uuid in "${extensions_to_check[@]}"; do
+        local ext_dir="$extensions_dir/$ext_uuid"
+        if [[ -d "$ext_dir" ]] && [[ -f "$ext_dir/metadata.json" ]]; then
+            # Check if enabled
+            if gnome-extensions list 2>/dev/null | grep -q "^$ext_uuid$"; then
+                local enabled_status
+                enabled_status=$(gnome-extensions info "$ext_uuid" 2>/dev/null | grep "State:" | grep -o "ENABLED\|DISABLED" || echo "")
+                if [[ "$enabled_status" == "ENABLED" ]]; then
+                    verified_count=$((verified_count + 1))
+                    print_success "$ext_uuid is installed and enabled"
+                else
+                    print_warning "$ext_uuid is installed but disabled"
+                fi
+            else
+                print_warning "$ext_uuid is installed but not in extensions list"
+            fi
+        else
+            print_warning "$ext_uuid is not properly installed"
+        fi
+    done
+    
+    print_info ""
+    print_info "✅ Verified: $verified_count/${#extensions_to_check[@]} extensions are installed and enabled"
+    print_info ""
+    print_info "💡 If extensions don't appear in Extension Manager or don't work:"
     print_info "   1. Press Alt+F2, type 'r' and press Enter (restart GNOME Shell)"
     print_info "   2. Or log out and log back in"
-    print_info "   3. Or check Extension Manager to see if they're enabled"
+    print_info "   3. Open Extension Manager (extension-manager) to verify they're listed"
+    print_info "   4. If still not visible, check permissions: ls -la ~/.local/share/gnome-shell/extensions/"
 }
 
 ###############################################################################
