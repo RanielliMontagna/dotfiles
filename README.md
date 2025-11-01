@@ -203,13 +203,15 @@ Personal projects in `~/www/personal/` are already configured with:
 
 If you need to add work projects later, you can create a new config file (e.g., `~/.gitconfig-work`) and add an `includeIf` entry in `~/.gitconfig` pointing to it.
 
-### 3. Configure Powerlevel10k Theme
+### 3. Powerlevel10k Theme
+
+Powerlevel10k is already pre-configured and ready to use! The prompt will work immediately after restarting your terminal.
+
+To customize it later, run:
 
 ```bash
 p10k configure
 ```
-
-This will guide you through customizing your prompt appearance.
 
 ### 4. (Optional) Authenticate GitHub CLI
 

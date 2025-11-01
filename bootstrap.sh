@@ -289,7 +289,7 @@ main() {
     echo -e "${YELLOW}📌 Next Steps:${NC}"
     echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}\n"
     echo "1. Restart your terminal or run: ${GREEN}source ~/.zshrc${NC}"
-    echo "2. Configure Powerlevel10k theme: ${GREEN}p10k configure${NC}"
+    echo "2. Powerlevel10k is already configured and ready to use!"
     echo "3. Git is already configured for personal projects in ~/www/personal/"
     echo ""
     print_info "Your personal Git config uses:"

@@ -121,6 +121,7 @@ dotfiles/
 - Creates project directory: `~/www/personal/`
 - Symlinks dotfiles from `dotfiles/` to `~/`
 - Copies Git configuration file (`.gitconfig-my`) to home (not symlinked, so it can be customized)
+- Automatically configures Powerlevel10k theme with pre-configured settings
 - Backs up existing files with `.backup` suffix
 - Sets Zsh as default shell (`chsh -s $(which zsh)`)
 
@@ -133,8 +134,9 @@ dotfiles/
 **Files copied** (not symlinked, so they can be customized):
 
 - `dotfiles/.gitconfig-my` → `~/.gitconfig-my` (for personal projects)
+- `dotfiles/.p10k.zsh` → `~/.p10k.zsh` (Powerlevel10k configuration - pre-configured with Pure style)
 
-**Idempotency**: Checks for `.oh-my-zsh` directory, plugin directories, existing project directories, and existing Git config files
+**Idempotency**: Checks for `.oh-my-zsh` directory, plugin directories, existing project directories, existing Git config files, and Powerlevel10k configuration
 
 ---
 

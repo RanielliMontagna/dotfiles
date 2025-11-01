@@ -84,6 +84,18 @@ main() {
         print_success "Powerlevel10k installed"
     fi
     
+    # Configure Powerlevel10k automatically
+    P10K_CONFIG_FILE="$HOME/.p10k.zsh"
+    if [[ ! -f "$P10K_CONFIG_FILE" ]] || [[ "$P10K_CONFIG_FILE" -ot "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]]; then
+        if [[ -f "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]]; then
+            print_info "Configuring Powerlevel10k automatically..."
+            cp "$DOTFILES_CONFIG_DIR/.p10k.zsh" "$P10K_CONFIG_FILE"
+            print_success "Powerlevel10k configured automatically"
+        fi
+    else
+        print_info "Powerlevel10k already configured"
+    fi
+    
     # Create project directories structure
     print_info "Creating project directories..."
     PROJECT_DIRS=(
@@ -103,7 +115,7 @@ main() {
     print_info "Linking dotfiles..."
     
     # Backup existing files
-    for file in .zshrc .gitconfig .aliases; do
+    for file in .zshrc .gitconfig .aliases .p10k.zsh; do
         if [[ -f "$HOME/$file" ]] && [[ ! -L "$HOME/$file" ]]; then
             print_warning "Backing up existing $file to $file.backup"
             mv "$HOME/$file" "$HOME/$file.backup"
