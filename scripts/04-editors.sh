@@ -146,15 +146,20 @@ main() {
         # Install if download succeeded
         if [[ "$DOWNLOADED" == "true" ]] && [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]]; then
             print_info "Installing Cursor package..."
-            # Install with dependency resolution
-            if sudo dpkg -i "$CURSOR_TEMP" 2>&1; then
+            
+            # Pre-configure debconf to answer "yes" to repository question
+            # This prevents the interactive prompt during installation
+            echo "cursor cursor/apt_repo boolean true" | sudo debconf-set-selections 2>/dev/null || true
+            
+            # Install with dependency resolution (non-interactive)
+            if sudo DEBIAN_FRONTEND=noninteractive dpkg -i "$CURSOR_TEMP" 2>&1; then
                 rm -f "$CURSOR_TEMP"
                 print_success "Cursor installed successfully"
             else
                 # Install dependencies and retry
                 print_info "Installing missing dependencies..."
-                sudo apt-get install -f -y
-                if sudo dpkg -i "$CURSOR_TEMP" 2>&1; then
+                sudo DEBIAN_FRONTEND=noninteractive apt-get install -f -y
+                if sudo DEBIAN_FRONTEND=noninteractive dpkg -i "$CURSOR_TEMP" 2>&1; then
                     rm -f "$CURSOR_TEMP"
                     print_success "Cursor installed successfully"
                 else
