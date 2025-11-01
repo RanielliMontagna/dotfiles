@@ -63,8 +63,7 @@ main() {
         "zip"               # Zip files
         "tree"              # Display directory structure
         "htop"              # Interactive process viewer
-        "vim"               # Text editor
-        "neovim"            # Modern vim
+        "nano"              # Text editor
         "tmux"              # Terminal multiplexer
         "jq"                # JSON processor
         "ripgrep"           # Fast grep alternative

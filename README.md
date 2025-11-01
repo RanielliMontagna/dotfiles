@@ -13,8 +13,9 @@ Automated setup for a fresh **Zorin OS** machine. Run **one command** after inst
 - 🧰 **Essential tools** - Git, curl, build-essential, modern CLI tools (ripgrep, bat, fzf)
 - 🐚 **Modern shell** - Zsh + Oh My Zsh + Powerlevel10k theme + useful plugins
 - � **Node.js LTS** - Via NVM with global packages (TypeScript, ESLint, Prettier)
+- 📝 **Code editors** - VS Code and Cursor (always installed)
 - 🐳 **Docker** - Latest stable from official repository (optional)
-- 🛠️ **Dev tools** - VS Code, GitHub CLI, database clients (optional)
+- 🛠️ **Dev tools** - GitHub CLI, database clients (optional)
 - 📦 **Modular scripts** - Organized by function, easy to customize
 - 📚 **Well documented** - AI-friendly docs with architecture and version info
 - ⚡ **Always updated** - Uses LTS and latest stable versions from official sources
@@ -53,7 +54,7 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 - **Version control**: Git, Git LFS
 - **Network tools**: curl, wget, ca-certificates
 - **Modern CLI**: ripgrep, bat, fd-find, fzf, htop, tree, jq
-- **Editors**: vim, neovim
+- **Editor**: nano (text editor)
 
 ### Shell Environment (Always Installed)
 
@@ -71,6 +72,11 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 - **Node.js**: LTS version (Long Term Support - most stable)
 - **Global packages**: yarn, pnpm, TypeScript, ts-node, nodemon, pm2, ESLint, Prettier
 
+### Code Editors (Always Installed)
+
+- **VS Code**: Latest stable from Microsoft repository
+- **Cursor**: AI-powered code editor (latest from official website)
+
 ### Docker (Optional)
 
 - **Docker Engine**: Latest stable from official Docker repository
@@ -84,7 +90,6 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 - **Git tools**: GitHub CLI (gh)
 - **Databases**: PostgreSQL client, SQLite, Redis CLI
 - **HTTP**: HTTPie, Postman
-- **Editors**: VS Code (latest stable)
 
 ---
 
@@ -118,6 +123,7 @@ This setup follows a **"always use latest stable/LTS"** approach:
 | NVM             | Latest from GitHub               |
 | Docker          | Latest stable from official repo |
 | VS Code         | Latest stable (auto-updates)     |
+| Cursor          | Latest from official website     |
 | npm packages    | Latest stable                    |
 
 All tools use LTS or latest stable versions from official sources.
@@ -209,7 +215,7 @@ sudo apt update && sudo apt upgrade docker-ce
 Edit `~/.aliases` (symlinked to `dotfiles/.aliases`):
 
 ```bash
-vim ~/.aliases
+nano ~/.aliases
 # Then reload
 source ~/.zshrc
 ```

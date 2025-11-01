@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# 05-extras.sh
+# 06-extras.sh
 # 
 # Install extra development tools and utilities
 # - Programming languages (Python, Go, Rust)
@@ -129,20 +129,6 @@ main() {
         else
             print_warning "Snap not available, skipping Postman installation"
         fi
-    fi
-    
-    # VS Code (if not installed)
-    if command -v code &> /dev/null; then
-        print_info "VS Code already installed"
-    else
-        print_info "Installing VS Code..."
-        wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-        sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
-        sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-        rm -f packages.microsoft.gpg
-        sudo apt update
-        sudo apt install -y code
-        print_success "VS Code installed"
     fi
     
     # Clean up

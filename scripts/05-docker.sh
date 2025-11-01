@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# 04-docker.sh
+# 05-docker.sh
 # 
 # Install Docker Engine and Docker Compose
 # - Installs latest stable Docker from official repository

@@ -98,11 +98,14 @@ main() {
     print_header "🟢 Installing Node.js (via NVM)"
     bash "$SCRIPTS_DIR/03-nodejs.sh"
     
+    print_header "📝 Installing Code Editors"
+    bash "$SCRIPTS_DIR/04-editors.sh"
+    
     print_header "🐳 Installing Docker"
     read -p "Install Docker? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        bash "$SCRIPTS_DIR/04-docker.sh"
+        bash "$SCRIPTS_DIR/05-docker.sh"
     else
         print_info "Skipping Docker installation"
     fi
@@ -111,7 +114,7 @@ main() {
     read -p "Install extra development tools? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        bash "$SCRIPTS_DIR/05-extras.sh"
+        bash "$SCRIPTS_DIR/06-extras.sh"
     else
         print_info "Skipping extra tools installation"
     fi

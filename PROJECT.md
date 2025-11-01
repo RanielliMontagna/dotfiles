@@ -30,8 +30,9 @@ dotfiles/
 │   ├── 01-essentials.sh     # System tools, build essentials, CLI tools
 │   ├── 02-shell.sh          # Zsh + Oh My Zsh + Powerlevel10k + plugins
 │   ├── 03-nodejs.sh         # NVM + Node.js LTS + global npm packages
-│   ├── 04-docker.sh         # Docker Engine (optional, user prompted)
-│   └── 05-extras.sh         # Python, GitHub CLI, databases, VS Code (optional)
+│   ├── 04-editors.sh         # VS Code + Cursor (always installed)
+│   ├── 05-docker.sh          # Docker Engine (optional, user prompted)
+│   └── 06-extras.sh          # Python, GitHub CLI, databases (optional)
 ├── dotfiles/                 # Configuration files (symlinked to ~/)
 │   ├── .zshrc               # Zsh configuration with plugins and theme
 │   ├── .gitconfig           # Git aliases and sensible defaults
@@ -53,8 +54,8 @@ dotfiles/
 **Behavior**:
 
 - Checks OS compatibility (Zorin/Ubuntu)
-- Executes scripts 01-03 always
-- Prompts user for scripts 04 (Docker) and 05 (Extras)
+- Executes scripts 01-04 always
+- Prompts user for scripts 05 (Docker) and 06 (Extras)
 - Makes all scripts executable
 - Provides colored output (info, success, warning, error)
 - Exits on error (`set -e`)
@@ -157,7 +158,33 @@ dotfiles/
 
 ---
 
-### 04-docker.sh
+### 04-editors.sh
+
+**Purpose**: Install code editors (always installed).
+
+**Installs**:
+
+- **VS Code**: Latest stable from Microsoft repository
+  - Adds Microsoft GPG key
+  - Adds VS Code repository to apt sources
+  - Installs via `apt install code`
+- **Cursor**: AI-powered code editor
+  - Downloads latest .deb package from official website
+  - Installs via `dpkg` with dependency resolution
+  - Falls back to manual installation instructions if download fails
+
+**Idempotency**: Checks `command -v code` and `command -v cursor` before installing
+
+**Source**:
+
+- VS Code: Microsoft repository
+- Cursor: Official Cursor website (downloader.cursor.sh)
+
+**Note**: This script always runs (not optional) as both editors are essential for development.
+
+---
+
+### 05-docker.sh
 
 **Purpose**: Install Docker Engine from official Docker repository (optional).
 
@@ -181,7 +208,7 @@ dotfiles/
 
 ---
 
-### 05-extras.sh
+### 06-extras.sh
 
 **Purpose**: Install additional development tools (optional).
 
@@ -199,12 +226,10 @@ dotfiles/
 - **HTTP tools**:
   - `httpie` - User-friendly HTTP client
   - `postman` - API testing tool (via snap)
-- **Editors**:
-  - `code` (VS Code) - Latest stable from Microsoft repository
 
 **Idempotency**: Checks via `command -v` or `dpkg -l` before installing
 
-**Source**: Mix of Ubuntu repos, official repositories (GitHub, Microsoft), and snap
+**Source**: Mix of Ubuntu repos, official repositories (GitHub), and snap
 
 **User Prompt**: Bootstrap script asks before running this script
 
@@ -250,7 +275,7 @@ dotfiles/
 - **Diff**: Uses `histogram` algorithm (better for large files)
 - **Colors**: Enabled for better readability
 - **Auto-prune**: Removes deleted remote branches on fetch
-- **Merge tool**: VS Code as merge/conflict tool
+- **Merge tool**: VS Code/Cursor as merge/conflict tool
 
 **Location after install**: `~/.gitconfig` (symlinked)
 
@@ -353,7 +378,7 @@ When helping with this project:
 
 **Example**: Adding Rust
 
-- Could go in `05-extras.sh` or new `06-rust.sh`
+- Could go in `06-extras.sh` or new `07-rust.sh`
 - Check: `command -v rustc`
 - Install via official rustup installer
 - Update both documentation files
@@ -397,6 +422,7 @@ When helping with this project:
 | Docker              | Latest stable            | Official Docker repo | `sudo apt update && sudo apt upgrade docker-ce`                                    |
 | Global npm packages | Latest stable            | npm registry         | `npm update -g`                                                                    |
 | VS Code             | Latest stable            | Microsoft repo       | Auto-updates enabled                                                               |
+| Cursor              | Latest                   | Official website     | Manual updates via downloader                                                      |
 | Oh My Zsh           | Latest                   | GitHub               | `omz update`                                                                       |
 | Shell plugins       | Latest                   | GitHub               | `git pull` in plugin directories                                                   |
 
@@ -440,7 +466,7 @@ When helping with this project:
 All core components implemented:
 
 - ✅ Bootstrap orchestration script
-- ✅ All installation scripts (01-05)
+- ✅ All installation scripts (01-04 always; 05-06 optional)
 - ✅ Configuration files (.zshrc, .gitconfig, .aliases)
 - ✅ Documentation (README.md, PROJECT.md)
 
