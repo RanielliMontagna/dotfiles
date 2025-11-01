@@ -2,6 +2,16 @@
 # Path to Oh My Zsh installation
 export ZSH="$HOME/.oh-my-zsh"
 
+# ============================================================================
+# Powerlevel10k Instant Prompt
+# ============================================================================
+
+# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
+# This must be loaded BEFORE Oh My Zsh is sourced.
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
+
 # Theme - Powerlevel10k
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
@@ -40,6 +50,21 @@ export NVM_DIR="$HOME/.nvm"
 # SDKMAN (Java Version Manager)
 export SDKMAN_DIR="$HOME/.sdkman"
 [[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+
+# Bun (JavaScript runtime and package manager)
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+
+# Android SDK
+if [[ -d "$HOME/Android/Sdk" ]]; then
+    export ANDROID_HOME="$HOME/Android/Sdk"
+    export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
+    export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
+elif [[ -d "$HOME/snap/android-studio/current/Android/Sdk" ]]; then
+    export ANDROID_HOME="$HOME/snap/android-studio/current/Android/Sdk"
+    export ANDROID_SDK_ROOT="$HOME/snap/android-studio/current/Android/Sdk"
+    export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
+fi
 
 # Load aliases
 if [ -f ~/.aliases ]; then
@@ -93,16 +118,12 @@ if command -v fzf &> /dev/null; then
 fi
 
 # ============================================================================
-# Powerlevel10k Instant Prompt
+# Powerlevel10k Configuration
 # ============================================================================
 
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+# This should be loaded AFTER Oh My Zsh is sourced.
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
 
 # ============================================================================
 # Utility Functions
@@ -140,4 +161,4 @@ extract() {
 # ============================================================================
 
 echo "🚀 Welcome to your dev environment!"
-echo "📝 Run 'aliases' to see available shortcuts"
+echo "📝 Run 'alias' to see available shortcuts"

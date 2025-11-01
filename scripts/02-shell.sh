@@ -84,10 +84,39 @@ main() {
         print_success "Powerlevel10k installed"
     fi
     
+    # Configure Powerlevel10k automatically (copy, not symlink - allows customization)
+    P10K_CONFIG_FILE="$HOME/.p10k.zsh"
+    if [[ -f "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]]; then
+        if [[ ! -f "$P10K_CONFIG_FILE" ]] || [[ "$DOTFILES_CONFIG_DIR/.p10k.zsh" -nt "$P10K_CONFIG_FILE" ]]; then
+            print_info "Configuring Powerlevel10k automatically..."
+            cp "$DOTFILES_CONFIG_DIR/.p10k.zsh" "$P10K_CONFIG_FILE"
+            print_success "Powerlevel10k configured automatically"
+        else
+            print_info "Powerlevel10k already configured (using existing ~/.p10k.zsh)"
+        fi
+    else
+        print_warning "Powerlevel10k config file not found in dotfiles directory"
+    fi
+    
+    # Create project directories structure
+    print_info "Creating project directories..."
+    PROJECT_DIRS=(
+        "$HOME/www/personal"
+    )
+    
+    for dir in "${PROJECT_DIRS[@]}"; do
+        if [[ -d "$dir" ]]; then
+            print_info "Directory $dir already exists"
+        else
+            mkdir -p "$dir"
+            print_success "Created directory $dir"
+        fi
+    done
+    
     # Link dotfiles
     print_info "Linking dotfiles..."
     
-    # Backup existing files
+    # Backup existing files (excluding .p10k.zsh which should not be symlinked)
     for file in .zshrc .gitconfig .aliases; do
         if [[ -f "$HOME/$file" ]] && [[ ! -L "$HOME/$file" ]]; then
             print_warning "Backing up existing $file to $file.backup"
@@ -95,17 +124,44 @@ main() {
         fi
     done
     
-    # Create symlinks
+    # Backup .p10k.zsh separately (it's copied, not symlinked)
+    if [[ -f "$HOME/.p10k.zsh" ]] && [[ ! -f "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]] || [[ "$HOME/.p10k.zsh" -nt "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]]; then
+        # Only backup if it's a custom file, not from dotfiles
+        if ! diff -q "$HOME/.p10k.zsh" "$DOTFILES_CONFIG_DIR/.p10k.zsh" &>/dev/null; then
+            print_warning "Backing up existing .p10k.zsh to .p10k.zsh.backup"
+            cp "$HOME/.p10k.zsh" "$HOME/.p10k.zsh.backup" 2>/dev/null || true
+        fi
+    fi
+    
+    # Backup existing Git config files if they exist and are not symlinks
+    if [[ -f "$HOME/.gitconfig-my" ]] && [[ ! -L "$HOME/.gitconfig-my" ]]; then
+        print_warning "Backing up existing .gitconfig-my to .gitconfig-my.backup"
+        mv "$HOME/.gitconfig-my" "$HOME/.gitconfig-my.backup"
+    fi
+    
+    # Create symlinks for main dotfiles
     ln -sf "$DOTFILES_CONFIG_DIR/.zshrc" "$HOME/.zshrc"
     ln -sf "$DOTFILES_CONFIG_DIR/.gitconfig" "$HOME/.gitconfig"
     ln -sf "$DOTFILES_CONFIG_DIR/.aliases" "$HOME/.aliases"
     
+    # Copy Git config file for personal projects (not symlinked, so it can be customized)
+    if [[ ! -f "$HOME/.gitconfig-my" ]]; then
+        cp "$DOTFILES_CONFIG_DIR/.gitconfig-my" "$HOME/.gitconfig-my"
+        print_success "Created ~/.gitconfig-my"
+    else
+        print_info ".gitconfig-my already exists (skipping)"
+    fi
+    
     print_success "Dotfiles linked"
     
     # Change default shell to Zsh
-    if [[ "$SHELL" != "$(which zsh)" ]]; then
+    ZSH_PATH="$(which zsh)"
+    CURRENT_SHELL="$(getent passwd "$USER" | cut -d: -f7)"
+    
+    if [[ "$CURRENT_SHELL" != "$ZSH_PATH" ]]; then
         print_info "Setting Zsh as default shell..."
-        chsh -s "$(which zsh)"
+        # Use sudo since we've cached the password in bootstrap.sh
+        sudo chsh -s "$ZSH_PATH" "$USER"
         print_success "Zsh set as default shell"
         print_warning "You may need to log out and log back in for this to take effect"
     else

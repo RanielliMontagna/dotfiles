@@ -77,11 +77,6 @@ main() {
         "yarn"              # Alternative package manager
         "pnpm"              # Fast, disk space efficient package manager
         "typescript"        # TypeScript compiler
-        "ts-node"           # TypeScript execution engine
-        "nodemon"           # Auto-restart node apps
-        "pm2"               # Production process manager
-        "eslint"            # JavaScript linter
-        "prettier"          # Code formatter
         "npm-check-updates" # Update package.json dependencies
     )
     
@@ -95,6 +90,18 @@ main() {
         fi
     done
     
+    # Install Bun (JavaScript runtime and package manager)
+    if command -v bun &> /dev/null; then
+        print_info "Bun is already installed ($(bun --version))"
+    else
+        print_info "Installing Bun..."
+        curl -fsSL https://bun.sh/install | bash
+        # Add Bun to PATH for current session
+        export BUN_INSTALL="$HOME/.bun"
+        export PATH="$BUN_INSTALL/bin:$PATH"
+        print_success "Bun installed"
+    fi
+    
     # Configure npm
     print_info "Configuring npm..."
     npm config set fund false        # Disable funding messages
@@ -104,6 +111,9 @@ main() {
     print_success "Node.js setup complete!"
     print_info "Node version: $(node --version)"
     print_info "NPM version: $(npm --version)"
+    if command -v bun &> /dev/null; then
+        print_info "Bun version: $(bun --version)"
+    fi
     print_info "You can install other Node versions with: nvm install <version>"
 }
 

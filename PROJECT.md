@@ -27,6 +27,7 @@ This file provides context for AI agents (ChatGPT, Claude, etc.) to understand t
 dotfiles/
 ├── bootstrap.sh              # Main orchestration script
 ├── scripts/                  # Installation scripts (executed in order)
+│   ├── common.sh            # Shared functions (downloads, connectivity, sudo management)
 │   ├── 01-essentials.sh     # System tools, build essentials, CLI tools
 │   ├── 02-shell.sh          # Zsh + Oh My Zsh + Powerlevel10k + plugins
 │   ├── 03-nodejs.sh         # NVM + Node.js LTS + global npm packages
@@ -35,18 +36,109 @@ dotfiles/
 │   ├── 06-java.sh            # Java SDK via SDKMAN (always installed)
 │   ├── 07-dev-tools.sh      # Android Studio, DBeaver, Postman (always installed)
 │   ├── 08-applications.sh   # Browsers, Steam, media apps, NordVPN (always installed)
+│   ├── 00-customization.sh     # Visual customization (dark theme, extensions, fonts)
 │   └── 09-extras.sh          # Python, GitHub CLI, databases (optional)
 ├── dotfiles/                 # Configuration files (symlinked to ~/)
 │   ├── .zshrc               # Zsh configuration with plugins and theme
 │   ├── .gitconfig           # Git aliases and sensible defaults
 │   └── .aliases             # Shell aliases organized by category
+├── assets/                  # Visual assets for customization
+│   └── wallpapers/          # Wallpaper directory
+│       └── background.jpg   # Custom dark wallpaper (optional)
 ├── PROJECT.md               # This file (AI context)
 ├── README.md                 # User documentation
+├── IMPROVEMENTS.md          # Future improvements backlog
 ├── package.json             # Node.js package info (for release-please)
 └── test.sh                  # Test script
 ```
 
-**Note**: This project uses `release-please` for automatic changelog generation on releases. Requires `package.json` for version management. Don't manually create/update CHANGELOG.md.
+**Note**:
+
+- This project uses `release-please` for automatic changelog generation on releases. Requires `package.json` for version management. Don't manually create/update CHANGELOG.md.
+- All scripts use shared functions from `scripts/common.sh` for consistency and reliability.
+
+---
+
+## Shared Functions (common.sh)
+
+**Purpose**: Provides reusable functions for all installation scripts to reduce code duplication and ensure consistency.
+
+**Key Functions**:
+
+- **Download Functions**:
+
+  - `safe_download()` - Universal download with timeout and retry (uses curl or wget)
+  - `safe_curl_download()` - Curl-specific download with timeout (300s), connect timeout (30s), and retry (3 attempts)
+  - `safe_wget_download()` - Wget-specific download with timeout and retry
+  - `safe_download_with_cache()` - Download with cache support (new)
+  - `safe_curl_download_with_cache()` - Curl download with cache (new)
+  - `safe_wget_download_with_cache()` - Wget download with cache (new)
+  - `get_cache_dir()` - Returns cache directory path (`~/.cache/dotfiles`)
+  - `init_cache()` - Initializes cache directory
+  - `clear_cache()` - Clears download cache
+
+- **Disk Space Management** (new):
+
+  - `check_disk_space()` - Verifies sufficient disk space is available before installation
+  - `size_to_mb()` - Converts human-readable sizes (GB, MB, KB) to megabytes
+
+- **Progress Indicators** (new):
+
+  - `show_progress()` - Shows progress message with step/total format `[step/total] message`
+  - `show_progress_percent()` - Shows progress with percentage `[X%] message (current/total)`
+
+- **Connectivity**:
+
+  - `check_internet()` - Verifies internet connection by pinging multiple DNS servers (8.8.8.8, 1.1.1.1, 208.67.222.222)
+
+- **Sudo Management**:
+
+  - `keep_sudo_alive()` - Runs in background to automatically renew sudo credentials during long installations
+
+- **Architecture Validation** (new):
+
+  - `get_architecture()` - Get system architecture (amd64, arm64, etc.)
+  - `is_architecture_supported()` - Check if current architecture matches requirement
+  - `get_arch_download_path()` - Get architecture-specific download path
+
+- **Checksum Validation** (new):
+
+  - `verify_checksum()` - Verify SHA256 checksum of downloaded file
+  - `safe_download_with_checksum()` - Download and verify checksum in one step
+
+- **APT Management** (new):
+
+  - `ensure_apt_updated()` - Run apt-get update only once per session (optimization)
+  - Tracks `APT_UPDATE_DONE` to prevent redundant updates
+
+- **Utility Functions**:
+  - `is_command_available()` - Check if a command exists
+  - `is_package_installed()` - Check if a dpkg package is installed
+  - `is_directory()` / `is_file()` - File system checks
+  - `print_info()` / `print_success()` / `print_warning()` / `print_error()` - Colored output functions
+
+**Usage**: All scripts should source `common.sh` at the beginning:
+
+```bash
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+fi
+```
+
+**Benefits**:
+
+- ✅ Consistent download behavior with timeouts and retries
+- ✅ **Download cache** prevents re-downloading files on script re-execution
+- ✅ **Disk space checks** prevent installation failures due to insufficient space
+- ✅ **Progress indicators** provide feedback during long operations
+- ✅ **Architecture validation** ensures downloads match system architecture
+- ✅ **Checksum validation** (optional) verifies file integrity when checksums are available
+- ✅ **APT optimization** - `apt-get update` runs only once per session, significantly reducing installation time
+- ✅ No hanging downloads on network failures
+- ✅ Automatic sudo renewal prevents password prompts during long installations
+- ✅ Reduced code duplication across scripts
+- ✅ Centralized error handling
 
 ---
 
@@ -59,9 +151,12 @@ dotfiles/
 **Behavior**:
 
 - Checks OS compatibility (Zorin/Ubuntu)
-- Executes scripts 01-08 always
+- Verifies internet connectivity before proceeding
+- Automatically renews sudo during long installations
+- Centralized apt-get update (optimization)
+- Executes scripts 00 and 01-08 always (00 = visual customization, runs first)
 - Prompts user for script 09 (Extras)
-- Makes all scripts executable
+- Sources `scripts/common.sh` for shared functions
 - Provides colored output (info, success, warning, error)
 - Exits on error (`set -e`)
 
@@ -94,6 +189,7 @@ dotfiles/
 - **Editor**: `nano` - Simple text editor
 - **Terminal**: `tmux`
 - **Network tools**: `net-tools` (ifconfig, netstat, route)
+- **Partition editor**: `gparted` - GUI tool for disk partition management
 
 **Idempotency**: Checks via `dpkg -l` before installing
 
@@ -117,7 +213,10 @@ dotfiles/
 
 **Configuration**:
 
+- Creates project directory: `~/www/personal/`
 - Symlinks dotfiles from `dotfiles/` to `~/`
+- Copies Git configuration file (`.gitconfig-my`) to home (not symlinked, so it can be customized)
+- Automatically configures Powerlevel10k theme with pre-configured settings
 - Backs up existing files with `.backup` suffix
 - Sets Zsh as default shell (`chsh -s $(which zsh)`)
 
@@ -127,7 +226,12 @@ dotfiles/
 - `dotfiles/.gitconfig` → `~/.gitconfig`
 - `dotfiles/.aliases` → `~/.aliases`
 
-**Idempotency**: Checks for `.oh-my-zsh` directory and plugin directories
+**Files copied** (not symlinked, so they can be customized):
+
+- `dotfiles/.gitconfig-my` → `~/.gitconfig-my` (for personal projects)
+- `dotfiles/.p10k.zsh` → `~/.p10k.zsh` (Powerlevel10k configuration - pre-configured with Pure style)
+
+**Idempotency**: Checks for `.oh-my-zsh` directory, plugin directories, existing project directories, existing Git config files, and Powerlevel10k configuration
 
 ---
 
@@ -146,24 +250,26 @@ dotfiles/
   - `yarn` - Alternative package manager
   - `pnpm` - Fast, disk-efficient package manager
   - `typescript` - TypeScript compiler
-  - `ts-node` - TypeScript execution engine
-  - `nodemon` - Development file watcher
-  - `pm2` - Production process manager
-  - `eslint` - JavaScript linter
-  - `prettier` - Code formatter
+  - `npm-check-updates` - Update package.json dependencies
+- **Bun**: JavaScript runtime and package manager (installed via official installer)
 
 **Configuration**:
 
 - Configures npm for optimal performance (cache, registry)
 - Adds NVM initialization to `.zshrc` (via dotfiles symlink)
+- Adds Bun to PATH in `.zshrc` (via dotfiles symlink)
 
-**Idempotency**: Checks for `$HOME/.nvm` directory, loads NVM to check version
+**Idempotency**:
+
+- Checks for `$HOME/.nvm` directory, loads NVM to check version
+- Checks for Bun via `command -v bun` before installing
 
 **Source**:
 
 - NVM: GitHub releases
 - Node.js: Via NVM (nodejs.org)
 - npm packages: npm registry
+- Bun: Official installer (bun.sh)
 
 ---
 
@@ -187,9 +293,11 @@ dotfiles/
 **Source**:
 
 - VS Code: Microsoft repository
-- Cursor: Official Cursor website (downloader.cursor.sh)
+- Cursor: Official Cursor API (api2.cursor.sh) - **Fixed: now uses official API endpoint instead of obsolete downloader.cursor.sh**
 
 **Note**: This script always runs (not optional) as both editors are essential for development.
+
+**Note**: Uses `safe_curl_download_with_cache()` from `common.sh` for reliable downloads with automatic retries, caching, and architecture validation. Supports both amd64 and arm64 architectures.
 
 ---
 
@@ -249,6 +357,8 @@ dotfiles/
 
 **Note**: This script always runs (not optional) as Java is essential for development.
 
+**Note**: Includes disk space check (~2GB required) and progress indicators during installation.
+
 ---
 
 ### 07-dev-tools.sh
@@ -273,19 +383,17 @@ dotfiles/
 - Checks `command -v` for Android Studio, DBeaver, Postman
 - Checks for installation directories
 
-**Source**:
-
-- Android Studio: Snap or official Google download
-- DBeaver: Snap or official .deb
-- Postman: Snap or official download
+**Source**: Snap store (preferred) or official downloads with fallback methods.
 
 **Note**: This script always runs (not optional) as these development tools are essential.
+
+**Note**: Uses `common.sh` functions for downloads, caching, and APT optimization. Includes disk space check (~3GB for Android Studio) and progress indicators.
 
 ---
 
 ### 08-applications.sh
 
-**Purpose**: Install browsers, games, media apps, and VPN (always installed).
+**Purpose**: Install browsers, games, media apps, VPN, and password manager (always installed).
 
 **Installs**:
 
@@ -313,6 +421,9 @@ dotfiles/
 - **NordVPN**: VPN service
   - Uses official NordVPN installer script
   - Automatically configures system
+- **Bitwarden**: Password manager
+  - Prefers snap installation (`snap install bitwarden`)
+  - Falls back to .deb download from Bitwarden website
 
 **Idempotency**:
 
@@ -320,18 +431,11 @@ dotfiles/
 - Checks `dpkg -l` for packages
 - Verifies installation directories
 
-**Source**:
-
-- Chrome: Official Google download
-- Brave: Official Brave repository
-- Firefox: Ubuntu repositories
-- Steam: Snap store or Ubuntu repositories
-- Spotify: Snap store or official Spotify repository
-- Discord: Snap store or official Discord download
-- OBS Studio: Snap store or Ubuntu repositories
-- NordVPN: Official NordVPN installer
+**Source**: Mix of Snap store (preferred), official repositories, and direct downloads with fallback methods.
 
 **Note**: This script always runs (not optional) as these applications are essential for daily use.
+
+**Note**: Uses `common.sh` functions for downloads, caching, APT optimization, and architecture validation.
 
 ---
 
@@ -358,6 +462,70 @@ dotfiles/
 **Source**: Mix of Ubuntu repos, official repositories (GitHub), and snap
 
 **User Prompt**: Bootstrap script asks before running this script
+
+---
+
+### 00-customization.sh
+
+**Purpose**: Visual customization for Zorin OS with dark theme (always installed, executed first).
+
+**Installs & Configures**:
+
+- **GTK Themes**:
+  - `arc-theme` - Popular dark GTK theme
+  - `adwaita-icon-theme` - Includes Adwaita Dark theme
+  - Configures system to use dark themes (Adwaita Dark, Arc Dark, Yaru Dark)
+- **Icon Themes**:
+  - `papirus-icon-theme` - Dark icon set (Papirus Dark)
+  - Configures Papirus Dark as default icon theme
+- **Custom Fonts**:
+  - **Inter** - Modern interface font (downloaded from GitHub)
+  - **JetBrains Mono** - Monospace font for terminal/editors (downloaded from GitHub)
+  - Updates font cache and configures fonts system-wide
+- **GNOME Appearance**:
+  - Sets `color-scheme` to `prefer-dark` for GTK applications
+  - Configures GTK theme, icon theme, cursor theme
+  - Sets fonts (Inter for interface, JetBrains Mono for monospace)
+  - Configures Zorin OS specific dark theme settings
+  - Configures Nautilus (file manager) and Gedit to use dark theme
+- **GNOME Terminal**:
+  - Creates dark profile with Nord theme colors
+  - Configures background, foreground, cursor, and palette colors
+  - Sets JetBrains Mono as terminal font
+- **Wallpaper**:
+  - Automatically configures wallpaper from `assets/wallpapers/background.jpg`
+  - Copies to `~/Pictures/` and sets via gsettings
+  - Supports multiple formats (jpg, jpeg, png, webp)
+- **GNOME Extensions**:
+  - Installs `gnome-shell-extension-manager` for easy extension management
+  - Configures system monitoring extensions (Vitals, Clipboard Indicator)
+  - Provides installation instructions for recommended extensions
+  - Auto-enables and configures extensions if already installed
+
+**Configuration**:
+
+- Uses `gsettings` for GNOME settings
+- Uses `dconf` for advanced configuration (terminal, extensions)
+- Detects GNOME environment automatically
+- Handles both X11 and Wayland display servers
+
+**Idempotency**:
+
+- Checks if themes/packages are installed before installing
+- Checks if fonts exist before downloading
+- Checks if wallpaper file exists before copying
+- Verifies GNOME environment before configuring
+- Safe to run multiple times
+
+**Source**:
+
+- Themes and icons: Ubuntu/Debian repositories
+- Fonts: GitHub releases (Inter, JetBrains Mono)
+- Extensions: Extension Manager or extensions.gnome.org
+
+**Note**: This script always runs (not optional) to ensure consistent dark theme across the system.
+
+**Note**: Uses `common.sh` functions for downloads, caching, and APT optimization. Some settings may require logout/login to fully apply.
 
 ---
 
@@ -388,17 +556,19 @@ dotfiles/
 
 ### dotfiles/.gitconfig
 
-**Purpose**: Git global configuration with useful aliases.
+**Purpose**: Git global configuration with conditional includes and useful aliases.
 
 **Contents**:
 
+- **Conditional Includes** (`includeIf`):
+  - `~/www/personal/` → loads `~/.gitconfig-my`
 - **Aliases** (15+):
   - `lg` - Pretty log graph
   - `last` - Show last commit
   - `undo` - Undo last commit (keep changes)
   - `branches` - List all branches
   - `cleanup` - Delete merged branches
-  - `st` - Status short
+  - `s` - Status short
   - And more...
 - **Diff**: Uses `histogram` algorithm (better for large files)
 - **Colors**: Enabled for better readability
@@ -406,6 +576,22 @@ dotfiles/
 - **Merge tool**: VS Code/Cursor as merge/conflict tool
 
 **Location after install**: `~/.gitconfig` (symlinked)
+
+---
+
+### dotfiles/.gitconfig-my
+
+**Purpose**: Git configuration for personal projects (my, esperto, mythral).
+
+**Contents**:
+
+- **User info**:
+  - name: Ranielli Montagna
+  - email: raniellimontagna@hotmail.com
+- **SSH configuration**:
+  - Uses `ssh://git@github.com/` instead of `https://github.com/`
+
+**Location after install**: `~/.gitconfig-my` (copied, not symlinked - can be customized)
 
 ---
 
@@ -463,8 +649,43 @@ dotfiles/
    - No data loss during installation
 
 8. **Informative Output**:
+
    - Color-coded messages (info=blue, success=green, warning=yellow, error=red)
    - Clear status messages for each step
+
+9. **Robust Downloads**:
+
+   - All downloads use timeouts (300-600s) and connection timeouts (30s)
+   - Automatic retry logic (3 attempts by default)
+   - Prevents hanging on network failures
+
+10. **Connectivity Checks**:
+
+    - Verifies internet connection before starting installation
+    - Tests multiple DNS servers for reliability
+
+11. **Sudo Management**:
+
+    - Automatic renewal of sudo credentials during long installations
+    - Prevents password prompts mid-installation
+
+12. **APT Optimization**:
+
+    - Centralized `apt-get update` runs once at the beginning
+    - Scripts use `ensure_apt_updated()` to avoid redundant updates
+    - Forces update only when repositories are added (force flag)
+    - **Significantly reduces total installation time**
+
+13. **Architecture Validation**:
+
+    - Verifies architecture before downloads (amd64, arm64)
+    - Clear error messages for unsupported architectures
+    - Automatic architecture detection and path selection
+
+14. **Checksum Validation**:
+    - Optional SHA256 checksum verification for downloaded files
+    - Ensures file integrity when checksums are available
+    - Gracefully skips validation if checksum not provided
 
 ---
 
@@ -548,6 +769,7 @@ When helping with this project:
 | System packages     | Latest from Ubuntu repos | `apt`                | `sudo apt update && sudo apt upgrade`                                              |
 | Node.js             | LTS version              | NVM (nodejs.org)     | `nvm install --lts && nvm alias default lts/*`                                     |
 | NVM                 | Latest release           | GitHub               | `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh \| bash` |
+| Bun                 | Latest stable            | Official installer   | `bun upgrade`                                                                      |
 | Docker              | Latest stable            | Official Docker repo | `sudo apt update && sudo apt upgrade docker-ce`                                    |
 | Global npm packages | Latest stable            | npm registry         | `npm update -g`                                                                    |
 | VS Code             | Latest stable            | Microsoft repo       | Auto-updates enabled                                                               |
@@ -597,9 +819,10 @@ When helping with this project:
 All core components implemented:
 
 - ✅ Bootstrap orchestration script
-- ✅ All installation scripts (01-08 always; 09 optional)
+- ✅ All installation scripts (00, 01-08 always; 09 optional)
+- ✅ Visual customization (dark theme, fonts, extensions)
 - ✅ Configuration files (.zshrc, .gitconfig, .aliases)
-- ✅ Documentation (README.md, PROJECT.md)
+- ✅ Documentation (README.md, PROJECT.md, IMPROVEMENTS.md)
 
 **Version Management**: Uses `release-please` for automatic changelog generation on releases to main branch.
 

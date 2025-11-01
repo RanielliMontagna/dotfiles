@@ -108,6 +108,15 @@ alias pt='pnpm test'
 alias prd='pnpm dev'
 alias prb='pnpm build'
 
+alias bi='bun install'
+alias ba='bun add'
+alias bad='bun add -d'
+alias br='bun run'
+alias bs='bun start'
+alias bt='bun test'
+alias brd='bun run dev'
+alias brb='bun run build'
+
 # ============================================================================
 # System aliases
 # ============================================================================

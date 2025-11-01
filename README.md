@@ -12,16 +12,22 @@ Automated setup for a fresh **Zorin OS** machine. Run **one command** after inst
 - 🔁 **Idempotent** - Safe to run multiple times without breaking anything
 - 🧰 **Essential tools** - Git, curl, build-essential, modern CLI tools (ripgrep, bat, fzf)
 - 🐚 **Modern shell** - Zsh + Oh My Zsh + Powerlevel10k theme + useful plugins
-- � **Node.js LTS** - Via NVM with global packages (TypeScript, ESLint, Prettier)
+- � **Node.js LTS** - Via NVM with global packages (TypeScript)
 - 📝 **Code editors** - VS Code and Cursor (always installed)
 - 🐳 **Docker** - Latest stable from official repository (always installed)
 - ☕ **Java SDK** - Versions 8, 11, 17, LTS via SDKMAN (always installed)
 - 🛠️ **Dev tools** - Android Studio, DBeaver, Postman (always installed)
-- 🌐 **Applications** - Chrome, Brave, Firefox, Steam, Spotify, Discord, OBS Studio, NordVPN (always installed)
+- 🌐 **Applications** - Chrome, Brave, Firefox, Steam, Spotify, Discord, OBS Studio, NordVPN, Bitwarden (always installed)
+- 🎨 **Dark theme** - Complete visual customization with dark themes, icons, fonts, and GNOME extensions
 - 🔧 **Extras** - GitHub CLI, database clients (optional)
 - 📦 **Modular scripts** - Organized by function, easy to customize
 - 📚 **Well documented** - AI-friendly docs with architecture and version info
 - ⚡ **Always updated** - Uses LTS and latest stable versions from official sources
+- 🛡️ **Robust downloads** - Timeouts, retries, and connectivity checks prevent hanging
+- 🔐 **Automatic sudo renewal** - No password prompts during long installations
+- ⚡ **APT optimization** - Centralized package list updates reduce installation time
+- 🏗️ **Architecture validation** - Ensures downloads match system architecture
+- 🔒 **Checksum validation** - Optional file integrity verification
 
 ---
 
@@ -57,6 +63,7 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 - **Version control**: Git, Git LFS
 - **Network tools**: curl, wget, ca-certificates, net-tools
 - **Modern CLI**: ripgrep, bat, fd-find, fzf, htop, tree, jq
+- **System tools**: GParted (partition editor)
 - **System monitoring**: htop, lm-sensors, nvtop
 - **Editor**: nano (text editor)
 
@@ -74,7 +81,7 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 
 - **NVM**: Latest version from GitHub
 - **Node.js**: LTS version (Long Term Support - most stable)
-- **Global packages**: yarn, pnpm, TypeScript, ts-node, nodemon, pm2, ESLint, Prettier
+- **Global packages**: yarn, pnpm, bun, TypeScript, npm-check-updates
 
 ### Code Editors (Always Installed)
 
@@ -102,7 +109,7 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 
 ### Applications (Always Installed)
 
-- **Browsers**: 
+- **Browsers**:
   - Google Chrome (latest stable)
   - Brave Browser (latest stable)
   - Firefox (latest from Ubuntu repos)
@@ -114,6 +121,21 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
   - OBS Studio (streaming and recording)
 - **VPN**:
   - NordVPN (VPN service)
+- **Security**:
+  - Bitwarden (password manager)
+
+### Visual Customization (Always Installed)
+
+- **Dark Theme**: Complete dark theme setup for Zorin OS/GNOME
+  - GTK themes: Adwaita Dark, Arc Dark, Yaru Dark
+  - Icon themes: Papirus Dark
+  - System-wide dark color scheme
+- **Custom Fonts**:
+  - Inter (modern interface font)
+  - JetBrains Mono (monospace for terminal/editors)
+- **Wallpaper**: Automatic dark wallpaper configuration
+- **GNOME Terminal**: Pre-configured dark profile with Nord theme colors
+- **GNOME Extensions**: Extension Manager + system monitoring setup (Vitals, Clipboard Indicator)
 
 ### Extra Tools (Optional)
 
@@ -121,6 +143,8 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 - **Git tools**: GitHub CLI (gh)
 - **Databases**: PostgreSQL client, SQLite, Redis CLI
 - **HTTP**: HTTPie
+
+---
 
 ---
 
@@ -136,10 +160,25 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 All configuration files are in the `dotfiles/` directory and are symlinked to your home:
 
 - **`.zshrc`** - Zsh configuration with plugins, theme, and custom functions
-- **`.gitconfig`** - Git aliases, better diffs, and sensible defaults
+- **`.gitconfig`** - Git aliases, better diffs, and conditional includes
 - **`.aliases`** - Hundreds of useful aliases for Git, Docker, npm, and more
 
+### Git Configuration with Conditional Includes
+
+The Git configuration uses `includeIf` to automatically load different settings based on project location:
+
+- **`~/.gitconfig`** - Main configuration (symlinked, contains common aliases and settings)
+- **`~/.gitconfig-my`** - Personal projects configuration (auto-created)
+  - Used for: `~/www/personal/`
+  - Pre-configured with your personal name, email, and SSH settings
+
 After installation, your existing files will be backed up to `~/.filename.backup`.
+
+### Project Directories
+
+The setup automatically creates the following project directory for personal projects:
+
+- `~/www/personal/`
 
 ---
 
@@ -147,17 +186,18 @@ After installation, your existing files will be backed up to `~/.filename.backup
 
 This setup follows a **"always use latest stable/LTS"** approach:
 
-| Component       | Version Strategy                 |
-| --------------- | -------------------------------- |
-| System packages | Latest from Ubuntu repos         |
-| Node.js         | **LTS** (Long Term Support)      |
-| NVM             | Latest from GitHub               |
-| Docker          | Latest stable from official repo |
-| VS Code         | Latest stable (auto-updates)     |
-| Cursor          | Latest from official website     |
-| Java (SDKMAN)   | Versions 8, 11, 17, LTS (21)     |
-| Android Studio  | Latest stable                    |
-| npm packages    | Latest stable                    |
+| Component       | Version Strategy                      |
+| --------------- | ------------------------------------- |
+| System packages | Latest from Ubuntu repos              |
+| Node.js         | **LTS** (Long Term Support)           |
+| NVM             | Latest from GitHub                    |
+| Bun             | Latest stable from official installer |
+| Docker          | Latest stable from official repo      |
+| VS Code         | Latest stable (auto-updates)          |
+| Cursor          | Latest from official website          |
+| Java (SDKMAN)   | Versions 8, 11, 17, LTS (21)          |
+| Android Studio  | Latest stable                         |
+| npm packages    | Latest stable                         |
 
 All tools use LTS or latest stable versions from official sources.
 
@@ -174,20 +214,25 @@ After running the bootstrap script:
 source ~/.zshrc
 ```
 
-### 2. Configure Git with Your Details
+### 2. Configure Git (Optional - Personal projects already configured)
 
-```bash
-git config --global user.name "Your Name"
-git config --global user.email "your.email@example.com"
-```
+Personal projects in `~/www/personal/` are already configured with:
 
-### 3. Configure Powerlevel10k Theme
+- Name: Ranielli Montagna
+- Email: raniellimontagna@hotmail.com
+- SSH: Uses `ssh://git@github.com/` instead of `https://github.com/`
+
+If you need to add work projects later, you can create a new config file (e.g., `~/.gitconfig-work`) and add an `includeIf` entry in `~/.gitconfig` pointing to it.
+
+### 3. Powerlevel10k Theme
+
+Powerlevel10k is already pre-configured and ready to use! The prompt will work immediately after restarting your terminal.
+
+To customize it later, run:
 
 ```bash
 p10k configure
 ```
-
-This will guide you through customizing your prompt appearance.
 
 ### 4. (Optional) Authenticate GitHub CLI
 
@@ -221,9 +266,38 @@ nordvpn connect
 nordvpn status
 ```
 
-### 7. (Optional) Log Out and Back In
+### 7. Dark Theme Customization
 
-Required for Docker group permissions and NordVPN to take effect.
+The system is automatically configured with a dark theme! You may need to:
+
+```bash
+# Restart GNOME Shell to apply all changes (optional)
+# Press Alt+F2, type 'r' and press Enter
+
+# Or log out and log back in for full theme application
+```
+
+**Wallpaper**: Place your custom dark wallpaper at:
+
+```
+dotfiles/assets/wallpapers/background.jpg
+```
+
+Supported formats: `.jpg`, `.jpeg`, `.png`, `.webp`
+
+**GNOME Extensions**: Install additional extensions:
+
+- Open Extension Manager from Activities
+- Install recommended extensions like Vitals, Clipboard Indicator, etc.
+- Extensions are automatically configured when installed
+
+### 8. (Optional) Log Out and Back In
+
+Required for:
+
+- Docker group permissions
+- NordVPN to take effect
+- Full dark theme application (some settings need a session restart)
 
 ---
 
@@ -246,6 +320,12 @@ nvm alias default lts/*
 
 ```bash
 npm update -g
+```
+
+### Update Bun
+
+```bash
+bun upgrade
 ```
 
 ### Update Oh My Zsh and Plugins
@@ -311,6 +391,9 @@ sudo snap refresh obs-studio
 
 # Update NordVPN
 nordvpn update
+
+# Update Bitwarden (if via snap)
+sudo snap refresh bitwarden
 ```
 
 ---
@@ -375,6 +458,38 @@ cd dotfiles
 bash bootstrap.sh
 ```
 
+### Option 3: Testing a Specific Branch
+
+To test changes from a specific branch (e.g., before merging to main):
+
+**Method 1: Local Repository (Recommended for Development)**
+
+```bash
+# If you already have the repo cloned locally
+cd dotfiles
+git checkout fix/minor-adjustments  # or your branch name
+git pull origin fix/minor-adjustments
+bash bootstrap.sh  # Uses local files from current branch
+```
+
+**Method 2: Clone Specific Branch**
+
+```bash
+# Clone the specific branch
+git clone -b fix/minor-adjustments https://github.com/RanielliMontagna/dotfiles.git
+cd dotfiles
+bash bootstrap.sh
+```
+
+**Method 3: One-Line Install from Branch (Testing Only)**
+
+```bash
+# Download and run bootstrap.sh from a specific branch
+curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/fix/minor-adjustments/bootstrap.sh | bash
+```
+
+> ⚠️ **Warning**: Always review the code before running scripts from untested branches!
+
 ---
 
 ## 🐛 Troubleshooting
@@ -433,6 +548,9 @@ aliases  # or show-aliases
 ```bash
 node --version
 npm --version
+yarn --version
+pnpm --version
+bun --version
 docker --version
 java --version
 git --version
@@ -446,6 +564,7 @@ spotify --version 2>/dev/null || echo "Spotify installed"
 discord --version 2>/dev/null || echo "Discord installed"
 obs --version 2>/dev/null || echo "OBS Studio installed"
 nordvpn --version
+bitwarden --version 2>/dev/null || echo "Bitwarden installed"
 ```
 
 ### Clean Up Docker
