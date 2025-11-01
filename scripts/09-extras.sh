@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# 08-extras.sh
+# 09-extras.sh
 # 
 # Install extra development tools and utilities
 # - Programming languages (Python, Go, Rust)

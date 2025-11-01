@@ -17,6 +17,7 @@ Automated setup for a fresh **Zorin OS** machine. Run **one command** after inst
 - 🐳 **Docker** - Latest stable from official repository (always installed)
 - ☕ **Java SDK** - Versions 8, 11, 17, LTS via SDKMAN (always installed)
 - 🛠️ **Dev tools** - Android Studio, DBeaver, Postman (always installed)
+- 🌐 **Applications** - Chrome, Brave, Firefox, Steam, Spotify, Discord, OBS Studio, NordVPN (always installed)
 - 🔧 **Extras** - GitHub CLI, database clients (optional)
 - 📦 **Modular scripts** - Organized by function, easy to customize
 - 📚 **Well documented** - AI-friendly docs with architecture and version info
@@ -54,8 +55,9 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 
 - **Build essentials**: GCC, G++, make, and compilation tools
 - **Version control**: Git, Git LFS
-- **Network tools**: curl, wget, ca-certificates
+- **Network tools**: curl, wget, ca-certificates, net-tools
 - **Modern CLI**: ripgrep, bat, fd-find, fzf, htop, tree, jq
+- **System monitoring**: htop, lm-sensors, nvtop
 - **Editor**: nano (text editor)
 
 ### Shell Environment (Always Installed)
@@ -97,6 +99,21 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 - **Android Studio**: Latest stable from Google
 - **DBeaver**: Database management tool
 - **Postman**: API testing tool
+
+### Applications (Always Installed)
+
+- **Browsers**: 
+  - Google Chrome (latest stable)
+  - Brave Browser (latest stable)
+  - Firefox (latest from Ubuntu repos)
+- **Gaming & Entertainment**:
+  - Steam (gaming platform)
+  - Spotify (music streaming)
+  - Discord (chat and communication)
+- **Media & Streaming**:
+  - OBS Studio (streaming and recording)
+- **VPN**:
+  - NordVPN (VPN service)
 
 ### Extra Tools (Optional)
 
@@ -191,9 +208,22 @@ sdk use java 17.0.9-tem
 sdk default java 17.0.9-tem
 ```
 
-### 6. (Optional) Log Out and Back In
+### 6. Configure NordVPN (if needed)
 
-Required for Docker group permissions to take effect.
+```bash
+# Login to your NordVPN account
+nordvpn login
+
+# Connect to VPN
+nordvpn connect
+
+# Check status
+nordvpn status
+```
+
+### 7. (Optional) Log Out and Back In
+
+Required for Docker group permissions and NordVPN to take effect.
 
 ---
 
@@ -255,6 +285,32 @@ sdk use java <version>
 sudo snap refresh android-studio
 
 # If installed manually, download latest from https://developer.android.com/studio
+```
+
+### Update Applications
+
+```bash
+# Update Chrome (auto-updates enabled)
+# Update Brave Browser
+sudo apt update && sudo apt upgrade brave-browser
+
+# Update Firefox
+sudo apt update && sudo apt upgrade firefox
+
+# Update Steam (if via snap)
+sudo snap refresh steam
+
+# Update Spotify (if via snap)
+sudo snap refresh spotify
+
+# Update Discord (if via snap)
+sudo snap refresh discord
+
+# Update OBS Studio (if via snap)
+sudo snap refresh obs-studio
+
+# Update NordVPN
+nordvpn update
 ```
 
 ---
@@ -382,6 +438,14 @@ java --version
 git --version
 zsh --version
 sdk version  # SDKMAN version
+google-chrome --version  # or chrome --version
+brave-browser --version
+firefox --version
+steam --version 2>/dev/null || echo "Steam installed"
+spotify --version 2>/dev/null || echo "Spotify installed"
+discord --version 2>/dev/null || echo "Discord installed"
+obs --version 2>/dev/null || echo "OBS Studio installed"
+nordvpn --version
 ```
 
 ### Clean Up Docker

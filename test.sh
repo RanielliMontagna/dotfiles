@@ -30,7 +30,8 @@ SCRIPTS=(
     "scripts/05-docker.sh"
     "scripts/06-java.sh"
     "scripts/07-dev-tools.sh"
-    "scripts/08-extras.sh"
+    "scripts/08-applications.sh"
+    "scripts/09-extras.sh"
 )
 
 for script in "${SCRIPTS[@]}"; do

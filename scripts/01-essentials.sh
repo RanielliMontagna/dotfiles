@@ -63,9 +63,12 @@ main() {
         "zip"               # Zip files
         "tree"              # Display directory structure
         "htop"              # Interactive process viewer
+        "lm-sensors"        # Hardware monitoring (temperature, voltage)
+        "nvtop"             # GPU monitoring (NVIDIA)
         "nano"              # Text editor
         "tmux"              # Terminal multiplexer
         "jq"                # JSON processor
+        "net-tools"         # Network tools (ifconfig, netstat, route)
         "ripgrep"           # Fast grep alternative
         "bat"               # Cat with syntax highlighting
         "fd-find"           # Fast find alternative

@@ -110,11 +110,14 @@ main() {
     print_header "🛠️ Installing Development Tools"
     bash "$SCRIPTS_DIR/07-dev-tools.sh"
     
+    print_header "🌐 Installing Applications"
+    bash "$SCRIPTS_DIR/08-applications.sh"
+    
     print_header "🔧 Installing Extra Tools"
     read -p "Install extra development tools? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        bash "$SCRIPTS_DIR/08-extras.sh"
+        bash "$SCRIPTS_DIR/09-extras.sh"
     else
         print_info "Skipping extra tools installation"
     fi

@@ -34,7 +34,8 @@ dotfiles/
 │   ├── 05-docker.sh          # Docker Engine (always installed)
 │   ├── 06-java.sh            # Java SDK via SDKMAN (always installed)
 │   ├── 07-dev-tools.sh      # Android Studio, DBeaver, Postman (always installed)
-│   └── 08-extras.sh          # Python, GitHub CLI, databases (optional)
+│   ├── 08-applications.sh   # Browsers, Steam, media apps, NordVPN (always installed)
+│   └── 09-extras.sh          # Python, GitHub CLI, databases (optional)
 ├── dotfiles/                 # Configuration files (symlinked to ~/)
 │   ├── .zshrc               # Zsh configuration with plugins and theme
 │   ├── .gitconfig           # Git aliases and sensible defaults
@@ -56,8 +57,8 @@ dotfiles/
 **Behavior**:
 
 - Checks OS compatibility (Zorin/Ubuntu)
-- Executes scripts 01-07 always
-- Prompts user for script 08 (Extras)
+- Executes scripts 01-08 always
+- Prompts user for script 09 (Extras)
 - Makes all scripts executable
 - Provides colored output (info, success, warning, error)
 - Exits on error (`set -e`)
@@ -85,8 +86,12 @@ dotfiles/
   - `htop` - Interactive process viewer
   - `tree` - Directory structure display
   - `jq` - JSON processor
+- **System/Hardware monitoring**:
+  - `lm-sensors` - Hardware sensors (temperature, voltage, fans)
+  - `nvtop` - GPU monitoring for NVIDIA
 - **Editor**: `nano` - Simple text editor
 - **Terminal**: `tmux`
+- **Network tools**: `net-tools` (ifconfig, netstat, route)
 
 **Idempotency**: Checks via `dpkg -l` before installing
 
@@ -271,7 +276,57 @@ dotfiles/
 
 ---
 
-### 08-extras.sh
+### 08-applications.sh
+
+**Purpose**: Install browsers, games, media apps, and VPN (always installed).
+
+**Installs**:
+
+- **Google Chrome**: Latest stable
+  - Downloads .deb package from Google
+  - Installs via `dpkg` with dependency resolution
+- **Brave Browser**: Latest stable
+  - Adds Brave official repository
+  - Installs via `apt install brave-browser`
+- **Firefox**: Latest from Ubuntu repos
+  - Checks if already installed (usually comes with system)
+  - Installs via `apt` if missing
+- **Steam**: Gaming platform
+  - Prefers snap installation (`snap install steam --classic`)
+  - Falls back to `apt install steam-launcher`
+- **Spotify**: Music streaming service
+  - Prefers snap installation (`snap install spotify`)
+  - Falls back to official Spotify repository
+- **Discord**: Chat and communication platform
+  - Prefers snap installation (`snap install discord`)
+  - Falls back to .deb download from Discord
+- **OBS Studio**: Streaming and recording software
+  - Prefers snap installation (`snap install obs-studio`)
+  - Falls back to `apt install obs-studio`
+- **NordVPN**: VPN service
+  - Uses official NordVPN installer script
+  - Automatically configures system
+
+**Idempotency**: 
+- Checks `command -v` for all applications
+- Checks `dpkg -l` for packages
+- Verifies installation directories
+
+**Source**:
+- Chrome: Official Google download
+- Brave: Official Brave repository
+- Firefox: Ubuntu repositories
+- Steam: Snap store or Ubuntu repositories
+- Spotify: Snap store or official Spotify repository
+- Discord: Snap store or official Discord download
+- OBS Studio: Snap store or Ubuntu repositories
+- NordVPN: Official NordVPN installer
+
+**Note**: This script always runs (not optional) as these applications are essential for daily use.
+
+---
+
+### 09-extras.sh
 
 **Purpose**: Install additional development tools (optional).
 
@@ -443,7 +498,7 @@ When helping with this project:
 
 **Example**: Adding Rust
 
-- Could go in `08-extras.sh` or new `09-rust.sh`
+- Could go in `09-extras.sh` or new `10-rust.sh`
 - Check: `command -v rustc`
 - Install via official rustup installer
 - Update both documentation files
@@ -533,7 +588,7 @@ When helping with this project:
 All core components implemented:
 
 - ✅ Bootstrap orchestration script
-- ✅ All installation scripts (01-07 always; 08 optional)
+- ✅ All installation scripts (01-08 always; 09 optional)
 - ✅ Configuration files (.zshrc, .gitconfig, .aliases)
 - ✅ Documentation (README.md, PROJECT.md)
 
