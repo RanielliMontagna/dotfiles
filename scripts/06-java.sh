@@ -68,13 +68,54 @@ main() {
             print_info "Attempting to install Java ${version}..."
             
             # SDKMAN asks "Do you want java X to be set as default? (Y/n):"
-            # Use yes "n" to automatically answer "n" (no) to skip setting as default
-            # We'll set the default manually at the end
-            if yes "n" | sdk install java "$version" >/dev/null 2>&1; then
-                # Give SDKMAN time to update its state
-                sleep 2
-                # Check if installation was successful
-                if sdk list java | grep -q "${version}.*installed"; then
+            # We need to answer "n" to skip setting as default (we'll set it manually at the end)
+            # Use printf to send "n" followed by newline when the prompt appears
+            local install_output
+            install_output=$(printf "n\n" | sdk install java "$version" 2>&1)
+            local install_status=$?
+            
+            # Show any errors (but not the full verbose output)
+            if echo "$install_output" | grep -qiE "(not found|not available|invalid|cannot find|unable to)"; then
+                # Version doesn't exist or is unavailable, try next
+                continue
+            fi
+            
+            # Check if there's a real error (not just warnings)
+            if [[ $install_status -ne 0 ]] && echo "$install_output" | grep -qiE "error|failed"; then
+                # Installation failed, try next version
+                continue
+            fi
+            
+            # Give SDKMAN time to update its state after installation
+            # Installation can take time, so we wait a bit
+            sleep 4
+            
+            # Check if installation was successful by verifying it's in the installed list
+            # Use a pattern match that's more flexible
+            local installed_versions
+            installed_versions=$(sdk list java | grep -E "${version_pattern}.*installed" || true)
+            
+            if [[ -n "$installed_versions" ]]; then
+                # Found installed version matching pattern
+                return 0
+            fi
+            
+            # Also check if the directory exists as fallback (SDKMAN uses exact version names)
+            if [[ -d "$HOME/.sdkman/candidates/java/${version}" ]]; then
+                return 0
+            fi
+            
+            # Check for any directory matching the major version pattern
+            if ls -d "$HOME/.sdkman/candidates/java/${version_pattern}"* 2>/dev/null | head -1 | grep -q .; then
+                return 0
+            fi
+            
+            # If install_status is 0 but not found, wait a bit more (SDKMAN may need time to update)
+            if [[ $install_status -eq 0 ]]; then
+                sleep 3
+                # Try checking again
+                installed_versions=$(sdk list java | grep -E "${version_pattern}.*installed" || true)
+                if [[ -n "$installed_versions" ]] || [[ -d "$HOME/.sdkman/candidates/java/${version}" ]]; then
                     return 0
                 fi
             fi
@@ -88,8 +129,16 @@ main() {
         print_info "Java 8 already installed"
     else
         print_info "Installing Java 8..."
+        # Try specific versions first, then fallback to generic pattern
         if install_java_version "8.0" "8.0.392-tem" "8.0.382-tem" "8.0.372-tem"; then
             print_success "Java 8 installed"
+        elif printf "n\n" | sdk install java 8-tem 2>&1 | grep -q "installed"; then
+            sleep 2
+            if sdk list java | grep -q "8.0.*installed"; then
+                print_success "Java 8 installed"
+            else
+                print_warning "Failed to install Java 8, continuing..."
+            fi
         else
             print_warning "Failed to install Java 8, continuing..."
         fi
@@ -100,8 +149,16 @@ main() {
         print_info "Java 11 already installed"
     else
         print_info "Installing Java 11..."
+        # Try specific versions first, then fallback to generic pattern
         if install_java_version "11.0" "11.0.21-tem" "11.0.20-tem" "11.0.19-tem"; then
             print_success "Java 11 installed"
+        elif printf "n\n" | sdk install java 11-tem 2>&1 | grep -q "installed"; then
+            sleep 2
+            if sdk list java | grep -q "11.0.*installed"; then
+                print_success "Java 11 installed"
+            else
+                print_warning "Failed to install Java 11, continuing..."
+            fi
         else
             print_warning "Failed to install Java 11, continuing..."
         fi
@@ -112,8 +169,16 @@ main() {
         print_info "Java 17 already installed"
     else
         print_info "Installing Java 17..."
+        # Try specific versions first, then fallback to generic pattern
         if install_java_version "17.0" "17.0.9-tem" "17.0.8-tem" "17.0.7-tem"; then
             print_success "Java 17 installed"
+        elif printf "n\n" | sdk install java 17-tem 2>&1 | grep -q "installed"; then
+            sleep 2
+            if sdk list java | grep -q "17.0.*installed"; then
+                print_success "Java 17 installed"
+            else
+                print_warning "Failed to install Java 17, continuing..."
+            fi
         else
             print_warning "Failed to install Java 17, continuing..."
         fi
@@ -124,8 +189,16 @@ main() {
         print_info "Java 21 (LTS) already installed"
     else
         print_info "Installing Java 21 (LTS)..."
+        # Try specific versions first, then fallback to generic pattern
         if install_java_version "21.0" "21.0.1-tem" "21.0.0-tem"; then
             print_success "Java 21 LTS installed"
+        elif printf "n\n" | sdk install java 21-tem 2>&1 | grep -q "installed"; then
+            sleep 2
+            if sdk list java | grep -q "21.0.*installed"; then
+                print_success "Java 21 LTS installed"
+            else
+                print_warning "Failed to install Java 21, continuing..."
+            fi
         else
             print_warning "Failed to install Java 21, continuing..."
         fi
