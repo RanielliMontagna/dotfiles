@@ -1,0 +1,24 @@
+{
+  "name": "dotfiles",
+  "version": "1.0.0",
+  "description": "Automated setup for Zorin OS development environment",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RanielliMontagna/dotfiles.git"
+  },
+  "keywords": [
+    "dotfiles",
+    "zorin-os",
+    "ubuntu",
+    "development-environment",
+    "bash",
+    "setup",
+    "automation"
+  ],
+  "author": "Ranielli Montagna",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "bash test.sh"
+  }
+}

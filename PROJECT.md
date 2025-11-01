@@ -41,10 +41,12 @@ dotfiles/
 │   ├── .gitconfig           # Git aliases and sensible defaults
 │   └── .aliases             # Shell aliases organized by category
 ├── PROJECT.md               # This file (AI context)
-└── README.md                 # User documentation
+├── README.md                 # User documentation
+├── package.json             # Node.js package info (for release-please)
+└── test.sh                  # Test script
 ```
 
-**Note**: This project uses `release-please` for automatic changelog generation on releases. Don't manually create/update CHANGELOG.md.
+**Note**: This project uses `release-please` for automatic changelog generation on releases. Requires `package.json` for version management. Don't manually create/update CHANGELOG.md.
 
 ---
 
@@ -231,14 +233,17 @@ dotfiles/
   - Java 21 LTS (21.0.x-tem)
 
 **Configuration**:
+
 - SDKMAN initialized in `.zshrc`
 - Java 17 set as default version
 
-**Idempotency**: 
+**Idempotency**:
+
 - Checks for `$HOME/.sdkman` directory
 - Checks installed Java versions via SDKMAN
 
 **Source**:
+
 - SDKMAN: https://get.sdkman.io
 - Java: Via SDKMAN (Temurin builds)
 
@@ -263,11 +268,13 @@ dotfiles/
   - Prefers snap installation
   - Falls back to manual .tar.gz installation
 
-**Idempotency**: 
+**Idempotency**:
+
 - Checks `command -v` for Android Studio, DBeaver, Postman
 - Checks for installation directories
 
 **Source**:
+
 - Android Studio: Snap or official Google download
 - DBeaver: Snap or official .deb
 - Postman: Snap or official download
@@ -307,12 +314,14 @@ dotfiles/
   - Uses official NordVPN installer script
   - Automatically configures system
 
-**Idempotency**: 
+**Idempotency**:
+
 - Checks `command -v` for all applications
 - Checks `dpkg -l` for packages
 - Verifies installation directories
 
 **Source**:
+
 - Chrome: Official Google download
 - Brave: Official Brave repository
 - Firefox: Ubuntu repositories
@@ -544,9 +553,9 @@ When helping with this project:
 | VS Code             | Latest stable            | Microsoft repo       | Auto-updates enabled                                                               |
 | Cursor              | Latest                   | Official website     | Manual updates via downloader                                                      |
 | Java (SDKMAN)       | 8, 11, 17, 21 LTS        | SDKMAN (Temurin)     | `sdk update && sdk install java <version>`                                         |
-| Android Studio      | Latest stable            | Snap/Google          | `snap refresh android-studio` or manual download                                  |
-| Oh My Zsh           | Latest                   | GitHub               | `omz update`                                                                        |
-| Shell plugins       | Latest                   | GitHub               | `git pull` in plugin directories                                                    |
+| Android Studio      | Latest stable            | Snap/Google          | `snap refresh android-studio` or manual download                                   |
+| Oh My Zsh           | Latest                   | GitHub               | `omz update`                                                                       |
+| Shell plugins       | Latest                   | GitHub               | `git pull` in plugin directories                                                   |
 
 ---
 
