@@ -131,14 +131,22 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 
 ## 🚀 Recent Improvements
 
-The project has been enhanced with **high-priority improvements** for better reliability:
+The project has been enhanced with **high and medium priority improvements** for better reliability:
+
+### High Priority ✅
 
 - ✅ **Download timeouts and retries** - All downloads now have timeouts (300-600s) and automatic retries (3 attempts) to prevent hanging
 - ✅ **Internet connectivity check** - Verifies connection before starting installation
 - ✅ **Automatic sudo renewal** - Keeps sudo credentials active during long installations
 - ✅ **Shared functions** - New `scripts/common.sh` provides reusable functions for all scripts, reducing code duplication
 
-These improvements make the installation process more robust and prevent common issues like hanging downloads or expired sudo passwords.
+### Medium Priority ✅ (NEW)
+
+- ✅ **Download cache** - Files are cached in `~/.cache/dotfiles/` to avoid re-downloading on script re-execution
+- ✅ **Disk space verification** - Checks available space before installing large packages (Java SDKs ~2GB, Android Studio ~3GB)
+- ✅ **Progress indicators** - Shows progress during long installations (e.g., `[2/4] Installing Java 11...`, `[3/5] Installing Android SDK component...`)
+
+These improvements make the installation process more robust, faster on re-runs, and prevent common issues like hanging downloads, expired sudo passwords, or insufficient disk space failures.
 
 ---
 

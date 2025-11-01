@@ -59,7 +59,7 @@ main() {
         
         # Download and install Chrome .deb
         CHROME_DEB="/tmp/google-chrome.deb"
-        safe_curl_download "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" "$CHROME_DEB" 3 300 30
+        safe_curl_download_with_cache "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" "$CHROME_DEB" 3 300 30
         
         if [[ -f "$CHROME_DEB" ]]; then
             sudo dpkg -i "$CHROME_DEB" || sudo apt-get install -f -y
@@ -154,7 +154,7 @@ main() {
             
             # Alternative: Download .deb from Discord
             DISCORD_DEB="/tmp/discord.deb"
-            safe_curl_download "https://discord.com/api/download?platform=linux&format=deb" "$DISCORD_DEB" 3 300 30
+            safe_curl_download_with_cache "https://discord.com/api/download?platform=linux&format=deb" "$DISCORD_DEB" 3 300 30
             
             if [[ -f "$DISCORD_DEB" ]]; then
                 sudo dpkg -i "$DISCORD_DEB" || sudo apt-get install -f -y
@@ -242,7 +242,7 @@ main() {
             
             if [[ -n "$LATEST_RELEASE_URL" ]] && [[ "$LATEST_RELEASE_URL" != "null" ]]; then
                 print_info "Downloading Bitwarden from GitHub releases..."
-                safe_curl_download "$LATEST_RELEASE_URL" "$BITWARDEN_DEB" 3 300 30
+                safe_curl_download_with_cache "$LATEST_RELEASE_URL" "$BITWARDEN_DEB" 3 300 30
                 
                 if [[ -f "$BITWARDEN_DEB" ]] && [[ -s "$BITWARDEN_DEB" ]]; then
                     sudo dpkg -i "$BITWARDEN_DEB" || sudo apt-get install -f -y

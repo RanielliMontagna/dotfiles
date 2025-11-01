@@ -101,7 +101,7 @@ main() {
         DOWNLOADED=false
         
         # Method 1: Try the official downloader endpoint (most common)
-        if safe_curl_download "https://downloader.cursor.sh/linux/deb" "$CURSOR_TEMP" 3 300 30; then
+        if safe_curl_download_with_cache "https://downloader.cursor.sh/linux/deb" "$CURSOR_TEMP" 3 300 30; then
             # Verify it's a valid file (at least 1MB, which is reasonable for a .deb)
             if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]; then
                 DOWNLOADED=true
@@ -112,7 +112,7 @@ main() {
         if [[ "$DOWNLOADED" == "false" ]] && [[ "$ARCH" == "amd64" ]]; then
             print_info "Trying alternative download URL..."
             rm -f "$CURSOR_TEMP"
-            if safe_curl_download "https://downloader.cursor.sh/linux/appImage/x64" "$CURSOR_TEMP" 3 300 30; then
+            if safe_curl_download_with_cache "https://downloader.cursor.sh/linux/appImage/x64" "$CURSOR_TEMP" 3 300 30; then
                 # Check if file is a .deb (AppImage endpoint might return .deb or .AppImage)
                 if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && (file "$CURSOR_TEMP" 2>/dev/null | grep -q "Debian" || [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]); then
                     DOWNLOADED=true

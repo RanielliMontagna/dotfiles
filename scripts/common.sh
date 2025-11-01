@@ -216,6 +216,218 @@ safe_wget_download() {
 }
 
 ###############################################################################
+# Disk Space Management
+###############################################################################
+
+# Check if sufficient disk space is available
+# Usage: check_disk_space <required_mb> [path]
+# Returns 0 if sufficient space, 1 otherwise
+check_disk_space() {
+    local required_mb="$1"
+    local check_path="${2:-$HOME}"
+    
+    # Get available space in MB
+    local available_mb
+    if [[ -d "$check_path" ]]; then
+        available_mb=$(df -m "$check_path" 2>/dev/null | awk 'NR==2 {print $4}')
+    else
+        available_mb=$(df -m "$HOME" 2>/dev/null | awk 'NR==2 {print $4}')
+    fi
+    
+    # Handle case where df fails or returns empty
+    if [[ -z "$available_mb" ]] || ! [[ "$available_mb" =~ ^[0-9]+$ ]]; then
+        print_warning "Could not determine available disk space"
+        return 0  # Continue anyway
+    fi
+    
+    if [[ $available_mb -lt $required_mb ]]; then
+        print_warning "Insufficient disk space"
+        print_info "Required: ${required_mb}MB, Available: ${available_mb}MB"
+        print_info "Please free up at least $((required_mb - available_mb))MB and try again"
+        return 1
+    fi
+    
+    print_info "Disk space check: ${available_mb}MB available (${required_mb}MB required)"
+    return 0
+}
+
+# Convert human-readable size to MB
+# Usage: size_to_mb "1.5GB" or "500MB"
+size_to_mb() {
+    local size="$1"
+    local value="${size//[^0-9.]/}"
+    local unit="${size//[0-9.]/}"
+    
+    case "${unit^^}" in
+        GB|G)
+            echo "$(echo "$value * 1024" | bc 2>/dev/null || echo "$value * 1024" | awk '{print $1 * 1024}')"
+            ;;
+        MB|M)
+            echo "$value"
+            ;;
+        KB|K)
+            echo "$(echo "$value / 1024" | bc 2>/dev/null || echo "$value / 1024" | awk '{print $1 / 1024}')"
+            ;;
+        *)
+            echo "$value"  # Assume MB if no unit
+            ;;
+    esac
+}
+
+###############################################################################
+# Download Cache
+###############################################################################
+
+# Get cache directory for downloads
+get_cache_dir() {
+    echo "${HOME}/.cache/dotfiles"
+}
+
+# Initialize cache directory
+init_cache() {
+    local cache_dir="$(get_cache_dir)"
+    mkdir -p "$cache_dir"
+    echo "$cache_dir"
+}
+
+# Download with cache support
+# Usage: safe_download_with_cache <url> <output_file> [max_retries] [timeout_seconds]
+safe_download_with_cache() {
+    local url="$1"
+    local output_file="$2"
+    local max_retries="${3:-3}"
+    local timeout="${4:-300}"
+    local connect_timeout="${5:-30}"
+    
+    local cache_dir="$(init_cache)"
+    local filename="$(basename "$output_file")"
+    local cache_file="$cache_dir/$filename"
+    
+    # Check if file exists in cache and is valid
+    if [[ -f "$cache_file" ]] && [[ -s "$cache_file" ]]; then
+        print_info "Using cached file: $filename"
+        cp "$cache_file" "$output_file"
+        return 0
+    fi
+    
+    # Download to output location
+    if safe_curl_download "$url" "$output_file" "$max_retries" "$timeout" "$connect_timeout"; then
+        # Cache the file for future use
+        cp "$output_file" "$cache_file" 2>/dev/null || true
+        print_info "File cached for future use"
+        return 0
+    fi
+    
+    return 1
+}
+
+# Download with cache using curl
+# Usage: safe_curl_download_with_cache <url> <output_file> [max_retries] [timeout_seconds]
+safe_curl_download_with_cache() {
+    local url="$1"
+    local output_file="$2"
+    local max_retries="${3:-3}"
+    local timeout="${4:-300}"
+    local connect_timeout="${5:-30}"
+    
+    local cache_dir="$(init_cache)"
+    local filename="$(basename "$output_file")"
+    local cache_file="$cache_dir/$filename"
+    
+    # Check if file exists in cache and is valid
+    if [[ -f "$cache_file" ]] && [[ -s "$cache_file" ]]; then
+        print_info "Using cached file: $filename ($(du -h "$cache_file" | cut -f1))"
+        cp "$cache_file" "$output_file"
+        return 0
+    fi
+    
+    # Download to output location
+    if safe_curl_download "$url" "$output_file" "$max_retries" "$timeout" "$connect_timeout"; then
+        # Cache the file for future use
+        cp "$output_file" "$cache_file" 2>/dev/null || true
+        print_info "File cached for future use"
+        return 0
+    fi
+    
+    return 1
+}
+
+# Download with cache using wget
+# Usage: safe_wget_download_with_cache <url> <output_file> [max_retries] [timeout_seconds]
+safe_wget_download_with_cache() {
+    local url="$1"
+    local output_file="$2"
+    local max_retries="${3:-3}"
+    local timeout="${4:-300}"
+    
+    local cache_dir="$(init_cache)"
+    local filename="$(basename "$output_file")"
+    local cache_file="$cache_dir/$filename"
+    
+    # Check if file exists in cache and is valid
+    if [[ -f "$cache_file" ]] && [[ -s "$cache_file" ]]; then
+        print_info "Using cached file: $filename ($(du -h "$cache_file" | cut -f1))"
+        cp "$cache_file" "$output_file"
+        return 0
+    fi
+    
+    # Download to output location
+    if safe_wget_download "$url" "$output_file" "$max_retries" "$timeout"; then
+        # Cache the file for future use
+        cp "$output_file" "$cache_file" 2>/dev/null || true
+        print_info "File cached for future use"
+        return 0
+    fi
+    
+    return 1
+}
+
+# Clear download cache
+clear_cache() {
+    local cache_dir="$(get_cache_dir)"
+    if [[ -d "$cache_dir" ]]; then
+        local size=$(du -sh "$cache_dir" | cut -f1)
+        rm -rf "$cache_dir"
+        print_success "Cache cleared (freed $size)"
+    else
+        print_info "Cache is already empty"
+    fi
+}
+
+###############################################################################
+# Progress Indicators
+###############################################################################
+
+# Show progress message for long operations
+# Usage: show_progress <message> [step] [total]
+show_progress() {
+    local message="$1"
+    local step="${2:-}"
+    local total="${3:-}"
+    
+    if [[ -n "$step" ]] && [[ -n "$total" ]]; then
+        print_info "[$step/$total] $message"
+    else
+        print_info "$message"
+    fi
+}
+
+# Show progress with percentage
+# Usage: show_progress_percent <message> <current> <total>
+show_progress_percent() {
+    local message="$1"
+    local current="$2"
+    local total="$3"
+    
+    if [[ -n "$current" ]] && [[ -n "$total" ]] && [[ $total -gt 0 ]]; then
+        local percent=$((current * 100 / total))
+        print_info "[$percent%] $message ($current/$total)"
+    else
+        print_info "$message"
+    fi
+}
+
+###############################################################################
 # Installation Helpers
 ###############################################################################
 

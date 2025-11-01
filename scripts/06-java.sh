@@ -13,26 +13,38 @@
 
 set -e
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-print_info() {
-    echo -e "${BLUE}[java]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    # Fallback if common.sh not found
+    GREEN='\033[0;32m'
+    BLUE='\033[0;34m'
+    YELLOW='\033[1;33m'
+    NC='\033[0m'
+    
+    print_info() {
+        echo -e "${BLUE}[java]${NC} $1"
+    }
+    
+    print_success() {
+        echo -e "${GREEN}✓${NC} $1"
+    }
+    
+    print_warning() {
+        echo -e "${YELLOW}⚠${NC} $1"
+    }
+fi
 
 main() {
     print_info "Installing Java SDK via SDKMAN..."
+    
+    # Check disk space (Java SDKs can be large, estimate ~500MB per version)
+    # Installing 4 versions (8, 11, 17, 21) = ~2GB
+    if ! check_disk_space 2048 "$HOME"; then
+        print_warning "Continuing anyway, but installation may fail if disk space is insufficient"
+    fi
     
     # Install SDKMAN for Java version management
     if [[ -d "$HOME/.sdkman" ]]; then
@@ -81,6 +93,10 @@ main() {
     
     # Install Java versions
     print_info "Installing Java SDK versions..."
+    
+    local java_versions=("8" "11" "17" "21")
+    local total_versions=${#java_versions[@]}
+    local current_version=0
     
     # Helper function to install Java version non-interactively
     install_java_version() {
@@ -162,6 +178,8 @@ main() {
     }
     
     # Java 8
+    current_version=1
+    show_progress "Checking Java 8 installation" "$current_version" "$total_versions"
     if is_java_installed "8.0"; then
         print_info "Java 8 already installed"
     else
@@ -182,6 +200,8 @@ main() {
     fi
     
     # Java 11
+    current_version=2
+    show_progress "Checking Java 11 installation" "$current_version" "$total_versions"
     if is_java_installed "11.0"; then
         print_info "Java 11 already installed"
     else
@@ -202,6 +222,8 @@ main() {
     fi
     
     # Java 17
+    current_version=3
+    show_progress "Checking Java 17 installation" "$current_version" "$total_versions"
     if is_java_installed "17.0"; then
         print_info "Java 17 already installed"
     else
@@ -222,6 +244,8 @@ main() {
     fi
     
     # Java LTS (21 or 17, prefer 21)
+    current_version=4
+    show_progress "Checking Java 21 (LTS) installation" "$current_version" "$total_versions"
     if is_java_installed "21.0"; then
         print_info "Java 21 (LTS) already installed"
     else

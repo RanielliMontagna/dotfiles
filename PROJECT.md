@@ -62,6 +62,22 @@ dotfiles/
   - `safe_download()` - Universal download with timeout and retry (uses curl or wget)
   - `safe_curl_download()` - Curl-specific download with timeout (300s), connect timeout (30s), and retry (3 attempts)
   - `safe_wget_download()` - Wget-specific download with timeout and retry
+  - `safe_download_with_cache()` - Download with cache support (new)
+  - `safe_curl_download_with_cache()` - Curl download with cache (new)
+  - `safe_wget_download_with_cache()` - Wget download with cache (new)
+  - `get_cache_dir()` - Returns cache directory path (`~/.cache/dotfiles`)
+  - `init_cache()` - Initializes cache directory
+  - `clear_cache()` - Clears download cache
+
+- **Disk Space Management** (new):
+
+  - `check_disk_space()` - Verifies sufficient disk space is available before installation
+  - `size_to_mb()` - Converts human-readable sizes (GB, MB, KB) to megabytes
+
+- **Progress Indicators** (new):
+
+  - `show_progress()` - Shows progress message with step/total format `[step/total] message`
+  - `show_progress_percent()` - Shows progress with percentage `[X%] message (current/total)`
 
 - **Connectivity**:
 
@@ -89,6 +105,9 @@ fi
 **Benefits**:
 
 - ✅ Consistent download behavior with timeouts and retries
+- ✅ **Download cache** prevents re-downloading files on script re-execution
+- ✅ **Disk space checks** prevent installation failures due to insufficient space
+- ✅ **Progress indicators** provide feedback during long operations
 - ✅ No hanging downloads on network failures
 - ✅ Automatic sudo renewal prevents password prompts during long installations
 - ✅ Reduced code duplication across scripts
@@ -251,7 +270,9 @@ fi
 
 **Note**: This script always runs (not optional) as both editors are essential for development.
 
-**Improvements**: Uses `safe_curl_download()` from `common.sh` for reliable downloads with automatic retries.
+**Improvements**: 
+- Uses `safe_curl_download_with_cache()` from `common.sh` for reliable downloads with automatic retries and caching
+- Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
 
 ---
 
@@ -311,6 +332,11 @@ fi
 
 **Note**: This script always runs (not optional) as Java is essential for development.
 
+**Improvements**:
+- **Disk space check** before installation (requires ~2GB for 4 Java versions)
+- **Progress indicators** during Java version installation (`[X/4] Installing Java...`)
+- Uses `common.sh` functions for consistent behavior
+
 ---
 
 ### 07-dev-tools.sh
@@ -343,7 +369,11 @@ fi
 
 **Note**: This script always runs (not optional) as these development tools are essential.
 
-**Improvements**: All downloads now use shared functions from `common.sh` with timeouts (300-600s), connection timeouts (30s), and automatic retries (3 attempts).
+**Improvements**: 
+- All downloads use shared functions from `common.sh` with timeouts (300-600s), connection timeouts (30s), and automatic retries (3 attempts)
+- Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
+- **Disk space check** before Android Studio installation (requires ~3GB)
+- **Progress indicators** during Android SDK component installation
 
 ---
 
@@ -401,7 +431,9 @@ fi
 
 **Note**: This script always runs (not optional) as these applications are essential for daily use.
 
-**Improvements**: Downloads now use shared functions from `common.sh` with timeouts (300s), connection timeouts (30s), and automatic retries (3 attempts).
+**Improvements**: 
+- Downloads now use shared functions from `common.sh` with timeouts (300s), connection timeouts (30s), and automatic retries (3 attempts)
+- Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
 
 ---
 

@@ -48,6 +48,11 @@ main() {
     else
         print_info "Installing Android Studio..."
         
+        # Check disk space (Android Studio can be large, ~1GB installation + SDK)
+        if ! check_disk_space 3072 "$HOME"; then
+            print_warning "Continuing anyway, but installation may fail if disk space is insufficient"
+        fi
+        
         # Check if snap is available
         if command -v snap &> /dev/null; then
             sudo snap install android-studio --classic
@@ -65,10 +70,10 @@ main() {
             ANDROID_STUDIO_DIR="/opt/android-studio"
             
             if [[ ! -d "$ANDROID_STUDIO_DIR" ]]; then
-                print_info "Downloading Android Studio..."
+                show_progress "Downloading Android Studio (this may take a while)..." 1 1
                 # Try specific version first, fallback to latest
-                if ! safe_wget_download "https://redirector.gvt1.com/edgedl/android/studio/ide-zips/${ANDROID_STUDIO_VERSION}/android-studio-${ANDROID_STUDIO_VERSION}-linux.tar.gz" /tmp/android-studio.tar.gz 3 600; then
-                    safe_wget_download "https://dl.google.com/dl/android/studio/ide-zips/latest/android-studio-linux.tar.gz" /tmp/android-studio.tar.gz 3 600
+                if ! safe_wget_download_with_cache "https://redirector.gvt1.com/edgedl/android/studio/ide-zips/${ANDROID_STUDIO_VERSION}/android-studio-${ANDROID_STUDIO_VERSION}-linux.tar.gz" /tmp/android-studio.tar.gz 3 600; then
+                    safe_wget_download_with_cache "https://dl.google.com/dl/android/studio/ide-zips/latest/android-studio-linux.tar.gz" /tmp/android-studio.tar.gz 3 600
                 fi
                 
                 sudo mkdir -p /opt
@@ -125,13 +130,13 @@ EOF
         
         # If sdkmanager not found, install command-line tools
         if [[ -z "$SDKMANAGER" ]] || [[ ! -f "$SDKMANAGER" ]]; then
-            print_info "Installing Android SDK Command-line Tools..."
+            show_progress "Installing Android SDK Command-line Tools..." 1 1
             mkdir -p "$ANDROID_SDK_PATH/cmdline-tools"
             
             # Download command-line tools
             CMDLINE_TOOLS_ZIP="/tmp/cmdline-tools.zip"
-            if ! safe_curl_download "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip" "$CMDLINE_TOOLS_ZIP" 3 300 30; then
-                safe_curl_download "https://dl.google.com/android/repository/commandlinetools-latest-linux.zip" "$CMDLINE_TOOLS_ZIP" 3 300 30
+            if ! safe_curl_download_with_cache "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip" "$CMDLINE_TOOLS_ZIP" 3 300 30; then
+                safe_curl_download_with_cache "https://dl.google.com/android/repository/commandlinetools-latest-linux.zip" "$CMDLINE_TOOLS_ZIP" 3 300 30
             fi
             
             if [[ -f "$CMDLINE_TOOLS_ZIP" ]] && [[ -s "$CMDLINE_TOOLS_ZIP" ]]; then
@@ -171,7 +176,7 @@ EOF
             }
             
             # Install essential SDK components
-            print_info "Installing essential Android SDK components (this may take a few minutes)..."
+            show_progress "Installing essential Android SDK components (this may take a few minutes)..." 1 1
             "$SDKMANAGER" --update || true
             
             # Install platform-tools, build-tools, and latest platform
@@ -183,13 +188,17 @@ EOF
                 "sources;android-34"
             )
             
+            local total_components=${#COMPONENTS[@]}
+            local current_component=0
+            
             for component in "${COMPONENTS[@]}"; do
-                print_info "Installing $component..."
+                current_component=$((current_component + 1))
+                show_progress "Installing $component..." "$current_component" "$total_components"
                 "$SDKMANAGER" "$component" > /dev/null 2>&1 || "$SDKMANAGER" "$component" || true
             done
             
             # Install emulator separately (optional, can take longer)
-            print_info "Installing Android Emulator (optional, this may take a while)..."
+            show_progress "Installing Android Emulator (optional, this may take a while)..." 1 1
             "$SDKMANAGER" "emulator" > /dev/null 2>&1 || {
                 print_warning "Emulator installation skipped (can be installed later)"
             }
@@ -224,8 +233,8 @@ EOF
             
             # Download DBeaver .deb
             DBEAVER_DEB="/tmp/dbeaver.deb"
-            if ! safe_curl_download "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" "$DBEAVER_DEB" 3 300 30; then
-                safe_curl_download "https://github.com/dbeaver/dbeaver/releases/latest/download/dbeaver-ce_latest_amd64.deb" "$DBEAVER_DEB" 3 300 30
+            if ! safe_curl_download_with_cache "https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb" "$DBEAVER_DEB" 3 300 30; then
+                safe_curl_download_with_cache "https://github.com/dbeaver/dbeaver/releases/latest/download/dbeaver-ce_latest_amd64.deb" "$DBEAVER_DEB" 3 300 30
             fi
             
             if [[ -f "$DBEAVER_DEB" ]]; then
@@ -250,7 +259,7 @@ EOF
             print_warning "Snap not available, trying alternative installation..."
             
             # Try to install via apt if available
-            if safe_curl_download "https://dl.pstmn.io/download/latest/linux64" /tmp/postman.tar.gz 3 300 30; then
+            if safe_curl_download_with_cache "https://dl.pstmn.io/download/latest/linux64" /tmp/postman.tar.gz 3 300 30; then
                 sudo mkdir -p /opt
                 sudo tar -xzf /tmp/postman.tar.gz -C /opt
                 

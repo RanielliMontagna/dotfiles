@@ -320,9 +320,9 @@ install_packages_parallel() {
 
 ### Média Prioridade (Impacto Médio)
 
-5. ⚠️ Verificação de espaço em disco
-6. ⚠️ Progresso para instalações longas
-7. ⚠️ Cache de downloads
+5. ✅ Verificação de espaço em disco
+6. ✅ Progresso para instalações longas
+7. ✅ Cache de downloads
 
 ### Baixa Prioridade (Nice to Have)
 
