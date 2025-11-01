@@ -25,8 +25,8 @@ source $ZSH/oh-my-zsh.sh
 # ============================================================================
 
 # Preferred editor
-export EDITOR='vim'
-export VISUAL='vim'
+export EDITOR='nano'
+export VISUAL='nano'
 
 # Language environment
 export LANG=en_US.UTF-8
@@ -36,6 +36,10 @@ export LC_ALL=en_US.UTF-8
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # Load nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # Load nvm bash_completion
+
+# SDKMAN (Java Version Manager)
+export SDKMAN_DIR="$HOME/.sdkman"
+[[ -s "$SDKMAN_DIR/bin/sdkman-init.sh" ]] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
 
 # Load aliases
 if [ -f ~/.aliases ]; then

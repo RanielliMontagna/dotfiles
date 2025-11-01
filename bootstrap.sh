@@ -102,19 +102,19 @@ main() {
     bash "$SCRIPTS_DIR/04-editors.sh"
     
     print_header "🐳 Installing Docker"
-    read -p "Install Docker? (y/N) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        bash "$SCRIPTS_DIR/05-docker.sh"
-    else
-        print_info "Skipping Docker installation"
-    fi
+    bash "$SCRIPTS_DIR/05-docker.sh"
+    
+    print_header "☕ Installing Java SDK"
+    bash "$SCRIPTS_DIR/06-java.sh"
+    
+    print_header "🛠️ Installing Development Tools"
+    bash "$SCRIPTS_DIR/07-dev-tools.sh"
     
     print_header "🔧 Installing Extra Tools"
     read -p "Install extra development tools? (y/N) " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        bash "$SCRIPTS_DIR/06-extras.sh"
+        bash "$SCRIPTS_DIR/08-extras.sh"
     else
         print_info "Skipping extra tools installation"
     fi

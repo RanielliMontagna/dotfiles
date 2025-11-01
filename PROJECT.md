@@ -31,8 +31,10 @@ dotfiles/
 │   ├── 02-shell.sh          # Zsh + Oh My Zsh + Powerlevel10k + plugins
 │   ├── 03-nodejs.sh         # NVM + Node.js LTS + global npm packages
 │   ├── 04-editors.sh         # VS Code + Cursor (always installed)
-│   ├── 05-docker.sh          # Docker Engine (optional, user prompted)
-│   └── 06-extras.sh          # Python, GitHub CLI, databases (optional)
+│   ├── 05-docker.sh          # Docker Engine (always installed)
+│   ├── 06-java.sh            # Java SDK via SDKMAN (always installed)
+│   ├── 07-dev-tools.sh      # Android Studio, DBeaver, Postman (always installed)
+│   └── 08-extras.sh          # Python, GitHub CLI, databases (optional)
 ├── dotfiles/                 # Configuration files (symlinked to ~/)
 │   ├── .zshrc               # Zsh configuration with plugins and theme
 │   ├── .gitconfig           # Git aliases and sensible defaults
@@ -54,8 +56,8 @@ dotfiles/
 **Behavior**:
 
 - Checks OS compatibility (Zorin/Ubuntu)
-- Executes scripts 01-04 always
-- Prompts user for scripts 05 (Docker) and 06 (Extras)
+- Executes scripts 01-07 always
+- Prompts user for script 08 (Extras)
 - Makes all scripts executable
 - Provides colored output (info, success, warning, error)
 - Exits on error (`set -e`)
@@ -83,7 +85,7 @@ dotfiles/
   - `htop` - Interactive process viewer
   - `tree` - Directory structure display
   - `jq` - JSON processor
-- **Editors**: `vim`, `neovim`
+- **Editor**: `nano` - Simple text editor
 - **Terminal**: `tmux`
 
 **Idempotency**: Checks via `dpkg -l` before installing
@@ -186,7 +188,7 @@ dotfiles/
 
 ### 05-docker.sh
 
-**Purpose**: Install Docker Engine from official Docker repository (optional).
+**Purpose**: Install Docker Engine from official Docker repository (always installed).
 
 **Installs**:
 
@@ -204,11 +206,72 @@ dotfiles/
 
 **Source**: Official Docker repository (download.docker.com)
 
-**User Prompt**: Bootstrap script asks before running this script
+**Note**: This script always runs (not optional) as Docker is essential for development.
 
 ---
 
-### 06-extras.sh
+### 06-java.sh
+
+**Purpose**: Install Java SDK via SDKMAN (always installed).
+
+**Installs**:
+
+- **SDKMAN**: Java version manager (https://sdkman.io/)
+  - Installs via curl script
+  - Initializes in `.zshrc` for interactive shells
+- **Java SDK**: Multiple versions via SDKMAN
+  - Java 8 (8.0.x-tem)
+  - Java 11 (11.0.x-tem)
+  - Java 17 (17.0.x-tem) - Set as default
+  - Java 21 LTS (21.0.x-tem)
+
+**Configuration**:
+- SDKMAN initialized in `.zshrc`
+- Java 17 set as default version
+
+**Idempotency**: 
+- Checks for `$HOME/.sdkman` directory
+- Checks installed Java versions via SDKMAN
+
+**Source**:
+- SDKMAN: https://get.sdkman.io
+- Java: Via SDKMAN (Temurin builds)
+
+**Note**: This script always runs (not optional) as Java is essential for development.
+
+---
+
+### 07-dev-tools.sh
+
+**Purpose**: Install development tools (always installed).
+
+**Installs**:
+
+- **Android Studio**: Latest stable
+  - Prefers snap installation
+  - Falls back to manual .tar.gz installation
+  - Creates desktop entry
+- **DBeaver**: Database management tool
+  - Prefers snap installation
+  - Falls back to .deb download
+- **Postman**: API testing tool
+  - Prefers snap installation
+  - Falls back to manual .tar.gz installation
+
+**Idempotency**: 
+- Checks `command -v` for Android Studio, DBeaver, Postman
+- Checks for installation directories
+
+**Source**:
+- Android Studio: Snap or official Google download
+- DBeaver: Snap or official .deb
+- Postman: Snap or official download
+
+**Note**: This script always runs (not optional) as these development tools are essential.
+
+---
+
+### 08-extras.sh
 
 **Purpose**: Install additional development tools (optional).
 
@@ -225,7 +288,6 @@ dotfiles/
   - `redis-tools` - Redis CLI
 - **HTTP tools**:
   - `httpie` - User-friendly HTTP client
-  - `postman` - API testing tool (via snap)
 
 **Idempotency**: Checks via `command -v` or `dpkg -l` before installing
 
@@ -247,6 +309,8 @@ dotfiles/
 - Plugin configuration (autosuggestions, syntax-highlighting)
 - Powerlevel10k theme setup
 - NVM initialization (loads NVM in interactive shells)
+- SDKMAN initialization (loads SDKMAN in interactive shells)
+- Editor set to `nano` (EDITOR and VISUAL variables)
 - Custom functions:
   - `mkcd` - Create directory and cd into it
   - `extract` - Extract various archive formats
@@ -325,8 +389,9 @@ dotfiles/
 
 6. **User Choice**:
 
-   - Optional components (Docker, Extras) prompt user before installation
+   - Optional components (Extras) prompt user before installation
    - User can skip optional installations
+   - Docker, Java, and Android tools are always installed
 
 7. **Backup Strategy**:
 
@@ -378,7 +443,7 @@ When helping with this project:
 
 **Example**: Adding Rust
 
-- Could go in `06-extras.sh` or new `07-rust.sh`
+- Could go in `08-extras.sh` or new `09-rust.sh`
 - Check: `command -v rustc`
 - Install via official rustup installer
 - Update both documentation files
@@ -423,8 +488,10 @@ When helping with this project:
 | Global npm packages | Latest stable            | npm registry         | `npm update -g`                                                                    |
 | VS Code             | Latest stable            | Microsoft repo       | Auto-updates enabled                                                               |
 | Cursor              | Latest                   | Official website     | Manual updates via downloader                                                      |
-| Oh My Zsh           | Latest                   | GitHub               | `omz update`                                                                       |
-| Shell plugins       | Latest                   | GitHub               | `git pull` in plugin directories                                                   |
+| Java (SDKMAN)       | 8, 11, 17, 21 LTS        | SDKMAN (Temurin)     | `sdk update && sdk install java <version>`                                         |
+| Android Studio      | Latest stable            | Snap/Google          | `snap refresh android-studio` or manual download                                  |
+| Oh My Zsh           | Latest                   | GitHub               | `omz update`                                                                        |
+| Shell plugins       | Latest                   | GitHub               | `git pull` in plugin directories                                                    |
 
 ---
 
@@ -466,7 +533,7 @@ When helping with this project:
 All core components implemented:
 
 - ✅ Bootstrap orchestration script
-- ✅ All installation scripts (01-04 always; 05-06 optional)
+- ✅ All installation scripts (01-07 always; 08 optional)
 - ✅ Configuration files (.zshrc, .gitconfig, .aliases)
 - ✅ Documentation (README.md, PROJECT.md)
 
@@ -481,6 +548,9 @@ All core components implemented:
 - **Oh My Zsh**: https://ohmyz.sh/
 - **Powerlevel10k**: https://github.com/romkatv/powerlevel10k
 - **Docker Docs**: https://docs.docker.com/
+- **SDKMAN**: https://sdkman.io/
+- **Android Studio**: https://developer.android.com/studio
+- **DBeaver**: https://dbeaver.io/
 - **Ubuntu Packages**: https://packages.ubuntu.com/
 
 ---

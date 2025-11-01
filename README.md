@@ -14,8 +14,10 @@ Automated setup for a fresh **Zorin OS** machine. Run **one command** after inst
 - 🐚 **Modern shell** - Zsh + Oh My Zsh + Powerlevel10k theme + useful plugins
 - � **Node.js LTS** - Via NVM with global packages (TypeScript, ESLint, Prettier)
 - 📝 **Code editors** - VS Code and Cursor (always installed)
-- 🐳 **Docker** - Latest stable from official repository (optional)
-- 🛠️ **Dev tools** - GitHub CLI, database clients (optional)
+- 🐳 **Docker** - Latest stable from official repository (always installed)
+- ☕ **Java SDK** - Versions 8, 11, 17, LTS via SDKMAN (always installed)
+- 🛠️ **Dev tools** - Android Studio, DBeaver, Postman (always installed)
+- 🔧 **Extras** - GitHub CLI, database clients (optional)
 - 📦 **Modular scripts** - Organized by function, easy to customize
 - 📚 **Well documented** - AI-friendly docs with architecture and version info
 - ⚡ **Always updated** - Uses LTS and latest stable versions from official sources
@@ -77,19 +79,31 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 - **VS Code**: Latest stable from Microsoft repository
 - **Cursor**: AI-powered code editor (latest from official website)
 
-### Docker (Optional)
+### Docker (Always Installed)
 
 - **Docker Engine**: Latest stable from official Docker repository
 - **Docker Compose**: V2 plugin
 - **Buildx**: Build with BuildKit
 - User added to docker group (no sudo needed)
 
+### Java SDK (Always Installed)
+
+- **SDKMAN**: Java version manager
+- **Java SDK**: Versions 8, 11, 17, and LTS (21)
+- Java 17 set as default
+
+### Development Tools (Always Installed)
+
+- **Android Studio**: Latest stable from Google
+- **DBeaver**: Database management tool
+- **Postman**: API testing tool
+
 ### Extra Tools (Optional)
 
 - **Languages**: Python 3 with pip
 - **Git tools**: GitHub CLI (gh)
 - **Databases**: PostgreSQL client, SQLite, Redis CLI
-- **HTTP**: HTTPie, Postman
+- **HTTP**: HTTPie
 
 ---
 
@@ -124,6 +138,8 @@ This setup follows a **"always use latest stable/LTS"** approach:
 | Docker          | Latest stable from official repo |
 | VS Code         | Latest stable (auto-updates)     |
 | Cursor          | Latest from official website     |
+| Java (SDKMAN)   | Versions 8, 11, 17, LTS (21)     |
+| Android Studio  | Latest stable                    |
 | npm packages    | Latest stable                    |
 
 All tools use LTS or latest stable versions from official sources.
@@ -162,7 +178,20 @@ This will guide you through customizing your prompt appearance.
 gh auth login
 ```
 
-### 5. (Optional) Log Out and Back In
+### 5. Switch Java Versions (if needed)
+
+```bash
+# List installed Java versions
+sdk list java
+
+# Switch to a specific version
+sdk use java 17.0.9-tem
+
+# Set default version
+sdk default java 17.0.9-tem
+```
+
+### 6. (Optional) Log Out and Back In
 
 Required for Docker group permissions to take effect.
 
@@ -206,6 +235,28 @@ cd ~/.oh-my-zsh/custom/themes/powerlevel10k && git pull
 sudo apt update && sudo apt upgrade docker-ce
 ```
 
+### Update Java Versions
+
+```bash
+# Update SDKMAN
+sdk update
+
+# Install newer versions
+sdk install java <version>
+
+# Switch versions
+sdk use java <version>
+```
+
+### Update Android Studio
+
+```bash
+# If installed via snap
+sudo snap refresh android-studio
+
+# If installed manually, download latest from https://developer.android.com/studio
+```
+
 ---
 
 ## 🛠️ Customization
@@ -231,7 +282,7 @@ nvm alias default 20  # Set Node.js 20 as default
 
 ### Add More Scripts
 
-Create a new script in `scripts/`, e.g., `06-my-tools.sh`:
+Create a new script in `scripts/`, e.g., `09-my-tools.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -327,8 +378,10 @@ aliases  # or show-aliases
 node --version
 npm --version
 docker --version
+java --version
 git --version
 zsh --version
+sdk version  # SDKMAN version
 ```
 
 ### Clean Up Docker
@@ -375,7 +428,10 @@ Built with these amazing tools:
 - [Oh My Zsh](https://ohmyz.sh/)
 - [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
 - [NVM](https://github.com/nvm-sh/nvm)
+- [SDKMAN](https://sdkman.io/)
 - [Docker](https://www.docker.com/)
+- [Android Studio](https://developer.android.com/studio)
+- [DBeaver](https://dbeaver.io/)
 - And many more open-source projects!
 
 ---

@@ -28,7 +28,9 @@ SCRIPTS=(
     "scripts/03-nodejs.sh"
     "scripts/04-editors.sh"
     "scripts/05-docker.sh"
-    "scripts/06-extras.sh"
+    "scripts/06-java.sh"
+    "scripts/07-dev-tools.sh"
+    "scripts/08-extras.sh"
 )
 
 for script in "${SCRIPTS[@]}"; do

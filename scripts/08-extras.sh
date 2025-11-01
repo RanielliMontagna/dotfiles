@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# 06-extras.sh
+# 08-extras.sh
 # 
 # Install extra development tools and utilities
 # - Programming languages (Python, Go, Rust)
@@ -116,19 +116,6 @@ main() {
         print_info "Installing Redis CLI..."
         sudo apt-get install -y redis-tools
         print_success "Redis CLI installed"
-    fi
-    
-    # Postman (snap version for latest updates)
-    if command -v postman &> /dev/null; then
-        print_info "Postman already installed"
-    else
-        print_info "Installing Postman..."
-        if command -v snap &> /dev/null; then
-            sudo snap install postman
-            print_success "Postman installed"
-        else
-            print_warning "Snap not available, skipping Postman installation"
-        fi
     fi
     
     # Clean up
