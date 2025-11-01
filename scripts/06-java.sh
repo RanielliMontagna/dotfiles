@@ -54,13 +54,45 @@ main() {
     # Install Java versions
     print_info "Installing Java SDK versions..."
     
+    # Helper function to install Java version non-interactively
+    install_java_version() {
+        local version_pattern=$1
+        shift
+        local versions=("$@")
+        
+        if sdk list java | grep -q "${version_pattern}.*installed" || [[ -d "$HOME/.sdkman/candidates/java/${version_pattern}"* ]]; then
+            return 0  # Already installed
+        fi
+        
+        for version in "${versions[@]}"; do
+            print_info "Attempting to install Java ${version}..."
+            
+            # SDKMAN asks "Do you want java X to be set as default? (Y/n):"
+            # Use yes "n" to automatically answer "n" (no) to skip setting as default
+            # We'll set the default manually at the end
+            if yes "n" | sdk install java "$version" >/dev/null 2>&1; then
+                # Give SDKMAN time to update its state
+                sleep 2
+                # Check if installation was successful
+                if sdk list java | grep -q "${version}.*installed"; then
+                    return 0
+                fi
+            fi
+            # If this version doesn't exist or failed, try next
+        done
+        return 1
+    }
+    
     # Java 8
     if sdk list java | grep -q "8.0.*installed" || [[ -d "$HOME/.sdkman/candidates/java/8.0"* ]]; then
         print_info "Java 8 already installed"
     else
         print_info "Installing Java 8..."
-        yes "n" | sdk install java 8.0.392-tem || yes "n" | sdk install java 8.0.382-tem || yes "n" | sdk install java 8.0.372-tem
-        print_success "Java 8 installed"
+        if install_java_version "8.0" "8.0.392-tem" "8.0.382-tem" "8.0.372-tem"; then
+            print_success "Java 8 installed"
+        else
+            print_warning "Failed to install Java 8, continuing..."
+        fi
     fi
     
     # Java 11
@@ -68,8 +100,11 @@ main() {
         print_info "Java 11 already installed"
     else
         print_info "Installing Java 11..."
-        yes "n" | sdk install java 11.0.21-tem || yes "n" | sdk install java 11.0.20-tem || yes "n" | sdk install java 11.0.19-tem
-        print_success "Java 11 installed"
+        if install_java_version "11.0" "11.0.21-tem" "11.0.20-tem" "11.0.19-tem"; then
+            print_success "Java 11 installed"
+        else
+            print_warning "Failed to install Java 11, continuing..."
+        fi
     fi
     
     # Java 17
@@ -77,8 +112,11 @@ main() {
         print_info "Java 17 already installed"
     else
         print_info "Installing Java 17..."
-        yes "n" | sdk install java 17.0.9-tem || yes "n" | sdk install java 17.0.8-tem || yes "n" | sdk install java 17.0.7-tem
-        print_success "Java 17 installed"
+        if install_java_version "17.0" "17.0.9-tem" "17.0.8-tem" "17.0.7-tem"; then
+            print_success "Java 17 installed"
+        else
+            print_warning "Failed to install Java 17, continuing..."
+        fi
     fi
     
     # Java LTS (21 or 17, prefer 21)
@@ -86,8 +124,11 @@ main() {
         print_info "Java 21 (LTS) already installed"
     else
         print_info "Installing Java 21 (LTS)..."
-        yes "n" | sdk install java 21.0.1-tem || yes "n" | sdk install java 21.0.0-tem || yes "n" | sdk install java 17.0.9-tem
-        print_success "Java LTS installed"
+        if install_java_version "21.0" "21.0.1-tem" "21.0.0-tem"; then
+            print_success "Java 21 LTS installed"
+        else
+            print_warning "Failed to install Java 21, continuing..."
+        fi
     fi
     
     # Set Java 17 as default (most commonly used)

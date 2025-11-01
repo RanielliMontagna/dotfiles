@@ -151,19 +151,25 @@ dotfiles/
   - `pm2` - Production process manager
   - `eslint` - JavaScript linter
   - `prettier` - Code formatter
+- **Bun**: JavaScript runtime and package manager (installed via official installer)
 
 **Configuration**:
 
 - Configures npm for optimal performance (cache, registry)
 - Adds NVM initialization to `.zshrc` (via dotfiles symlink)
+- Adds Bun to PATH in `.zshrc` (via dotfiles symlink)
 
-**Idempotency**: Checks for `$HOME/.nvm` directory, loads NVM to check version
+**Idempotency**:
+
+- Checks for `$HOME/.nvm` directory, loads NVM to check version
+- Checks for Bun via `command -v bun` before installing
 
 **Source**:
 
 - NVM: GitHub releases
 - Node.js: Via NVM (nodejs.org)
 - npm packages: npm registry
+- Bun: Official installer (bun.sh)
 
 ---
 
@@ -548,6 +554,7 @@ When helping with this project:
 | System packages     | Latest from Ubuntu repos | `apt`                | `sudo apt update && sudo apt upgrade`                                              |
 | Node.js             | LTS version              | NVM (nodejs.org)     | `nvm install --lts && nvm alias default lts/*`                                     |
 | NVM                 | Latest release           | GitHub               | `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh \| bash` |
+| Bun                 | Latest stable            | Official installer   | `bun upgrade`                                                                      |
 | Docker              | Latest stable            | Official Docker repo | `sudo apt update && sudo apt upgrade docker-ce`                                    |
 | Global npm packages | Latest stable            | npm registry         | `npm update -g`                                                                    |
 | VS Code             | Latest stable            | Microsoft repo       | Auto-updates enabled                                                               |

@@ -74,7 +74,7 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 
 - **NVM**: Latest version from GitHub
 - **Node.js**: LTS version (Long Term Support - most stable)
-- **Global packages**: yarn, pnpm, TypeScript, ts-node, nodemon, pm2, ESLint, Prettier
+- **Global packages**: yarn, pnpm, bun, TypeScript, ts-node, nodemon, pm2, ESLint, Prettier
 
 ### Code Editors (Always Installed)
 
@@ -147,17 +147,18 @@ After installation, your existing files will be backed up to `~/.filename.backup
 
 This setup follows a **"always use latest stable/LTS"** approach:
 
-| Component       | Version Strategy                 |
-| --------------- | -------------------------------- |
-| System packages | Latest from Ubuntu repos         |
-| Node.js         | **LTS** (Long Term Support)      |
-| NVM             | Latest from GitHub               |
-| Docker          | Latest stable from official repo |
-| VS Code         | Latest stable (auto-updates)     |
-| Cursor          | Latest from official website     |
-| Java (SDKMAN)   | Versions 8, 11, 17, LTS (21)     |
-| Android Studio  | Latest stable                    |
-| npm packages    | Latest stable                    |
+| Component       | Version Strategy                      |
+| --------------- | ------------------------------------- |
+| System packages | Latest from Ubuntu repos              |
+| Node.js         | **LTS** (Long Term Support)           |
+| NVM             | Latest from GitHub                    |
+| Bun             | Latest stable from official installer |
+| Docker          | Latest stable from official repo      |
+| VS Code         | Latest stable (auto-updates)          |
+| Cursor          | Latest from official website          |
+| Java (SDKMAN)   | Versions 8, 11, 17, LTS (21)          |
+| Android Studio  | Latest stable                         |
+| npm packages    | Latest stable                         |
 
 All tools use LTS or latest stable versions from official sources.
 
@@ -246,6 +247,12 @@ nvm alias default lts/*
 
 ```bash
 npm update -g
+```
+
+### Update Bun
+
+```bash
+bun upgrade
 ```
 
 ### Update Oh My Zsh and Plugins
@@ -465,6 +472,9 @@ aliases  # or show-aliases
 ```bash
 node --version
 npm --version
+yarn --version
+pnpm --version
+bun --version
 docker --version
 java --version
 git --version
