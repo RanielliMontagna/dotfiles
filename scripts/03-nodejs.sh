@@ -77,11 +77,6 @@ main() {
         "yarn"              # Alternative package manager
         "pnpm"              # Fast, disk space efficient package manager
         "typescript"        # TypeScript compiler
-        "ts-node"           # TypeScript execution engine
-        "nodemon"           # Auto-restart node apps
-        "pm2"               # Production process manager
-        "eslint"            # JavaScript linter
-        "prettier"          # Code formatter
         "npm-check-updates" # Update package.json dependencies
     )
     

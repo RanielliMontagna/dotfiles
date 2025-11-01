@@ -153,11 +153,7 @@ dotfiles/
   - `yarn` - Alternative package manager
   - `pnpm` - Fast, disk-efficient package manager
   - `typescript` - TypeScript compiler
-  - `ts-node` - TypeScript execution engine
-  - `nodemon` - Development file watcher
-  - `pm2` - Production process manager
-  - `eslint` - JavaScript linter
-  - `prettier` - Code formatter
+  - `npm-check-updates` - Update package.json dependencies
 - **Bun**: JavaScript runtime and package manager (installed via official installer)
 
 **Configuration**:

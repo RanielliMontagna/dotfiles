@@ -12,7 +12,7 @@ Automated setup for a fresh **Zorin OS** machine. Run **one command** after inst
 - 🔁 **Idempotent** - Safe to run multiple times without breaking anything
 - 🧰 **Essential tools** - Git, curl, build-essential, modern CLI tools (ripgrep, bat, fzf)
 - 🐚 **Modern shell** - Zsh + Oh My Zsh + Powerlevel10k theme + useful plugins
-- � **Node.js LTS** - Via NVM with global packages (TypeScript, ESLint, Prettier)
+- � **Node.js LTS** - Via NVM with global packages (TypeScript)
 - 📝 **Code editors** - VS Code and Cursor (always installed)
 - 🐳 **Docker** - Latest stable from official repository (always installed)
 - ☕ **Java SDK** - Versions 8, 11, 17, LTS via SDKMAN (always installed)
@@ -75,7 +75,7 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 
 - **NVM**: Latest version from GitHub
 - **Node.js**: LTS version (Long Term Support - most stable)
-- **Global packages**: yarn, pnpm, bun, TypeScript, ts-node, nodemon, pm2, ESLint, Prettier
+- **Global packages**: yarn, pnpm, bun, TypeScript, npm-check-updates
 
 ### Code Editors (Always Installed)
 
