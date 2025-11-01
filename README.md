@@ -47,11 +47,19 @@ bash bootstrap.sh
 ### Method 2: One-Line Install
 
 ```bash
-# Download and run directly (be careful with this approach!)
+# Download and run directly - all scripts will be downloaded automatically
 curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/bootstrap.sh | bash
 ```
 
-> ⚠️ **Note**: Always review scripts before running them on your system!
+Or for a specific branch:
+
+```bash
+DOTFILES_BRANCH=feat/visual-customization curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/feat/visual-customization/bootstrap.sh | bash
+```
+
+> ✅ **Note**: When run via curl, the bootstrap script automatically downloads all required scripts from GitHub. No need to clone the repository first!
+>
+> ⚠️ **Security**: Always review scripts before running them on your system!
 
 ---
 
@@ -481,14 +489,16 @@ cd dotfiles
 bash bootstrap.sh
 ```
 
-**Method 3: One-Line Install from Branch (Testing Only)**
+**Method 3: One-Line Install from Branch**
 
 ```bash
-# Download and run bootstrap.sh from a specific branch
-curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/fix/minor-adjustments/bootstrap.sh | bash
+# All scripts will be downloaded automatically from the specified branch
+DOTFILES_BRANCH=feat/visual-customization curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/feat/visual-customization/bootstrap.sh | bash
 ```
 
-> ⚠️ **Warning**: Always review the code before running scripts from untested branches!
+> ✅ Works the same as Method 2 - all scripts are downloaded automatically!
+>
+> ⚠️ **Security**: Always review the code before running scripts from untested branches!
 
 ---
 

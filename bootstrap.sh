@@ -24,6 +24,60 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Download scripts from GitHub when running via curl | bash
+download_scripts_from_github() {
+    local branch="${DOTFILES_BRANCH:-main}"
+    local base_url="https://raw.githubusercontent.com/RanielliMontagna/dotfiles/${branch}"
+    local temp_dir="$HOME/.dotfiles-temp"
+    local scripts_dir="$temp_dir/scripts"
+    
+    print_info "Downloading scripts from GitHub (branch: $branch)..."
+    
+    # Create temporary directory
+    mkdir -p "$scripts_dir"
+    
+    # List of scripts to download
+    local scripts=(
+        "scripts/common.sh"
+        "scripts/00-customization.sh"
+        "scripts/01-essentials.sh"
+        "scripts/02-shell.sh"
+        "scripts/03-nodejs.sh"
+        "scripts/04-editors.sh"
+        "scripts/05-docker.sh"
+        "scripts/06-java.sh"
+        "scripts/07-dev-tools.sh"
+        "scripts/08-applications.sh"
+        "scripts/09-extras.sh"
+    )
+    
+    # Download each script
+    local failed=0
+    for script_path in "${scripts[@]}"; do
+        local script_name=$(basename "$script_path")
+        local script_url="${base_url}/${script_path}"
+        local script_file="${scripts_dir}/${script_name}"
+        
+        print_info "Downloading $script_name..."
+        if curl -fsSL --max-time 30 "$script_url" -o "$script_file" 2>/dev/null; then
+            chmod +x "$script_file"
+            print_success "Downloaded $script_name"
+        else
+            print_error "Failed to download $script_name from $script_url"
+            failed=$((failed + 1))
+        fi
+    done
+    
+    if [[ $failed -gt 0 ]]; then
+        print_error "Failed to download $failed script(s). Please check your internet connection."
+        rm -rf "$temp_dir"
+        return 1
+    fi
+    
+    echo "$temp_dir"
+    return 0
+}
+
 # Get the directory where this script is located
 # This handles both cases: local execution and curl | bash
 get_dotfiles_dir() {
@@ -35,7 +89,7 @@ get_dotfiles_dir() {
         return 0
     fi
     
-    # If running via curl | bash, check current directory
+    # If running via curl | bash, check current directory first
     if [[ -d "scripts" ]] && [[ -f "bootstrap.sh" ]]; then
         echo "$(pwd)"
         return 0
@@ -55,12 +109,53 @@ get_dotfiles_dir() {
         fi
     done
     
+    # If not found and running via curl | bash, download scripts automatically
+    # Check if we're running via curl by seeing if script_source is not a regular file
+    # BASH_SOURCE[0] will be something like "/dev/fd/63" when run via pipe
+    if [[ ! -f "$script_source" ]] || \
+       [[ "$script_source" == *"/dev/fd/"* ]] || \
+       [[ "$script_source" == *"/proc/self/"* ]] || \
+       [[ "$script_source" == "/dev/stdin" ]] || \
+       [[ ! -r "$script_source" ]]; then
+        # Running via curl | bash, download scripts
+        local temp_dir
+        if temp_dir=$(download_scripts_from_github); then
+            echo "$temp_dir"
+            return 0
+        else
+            return 1
+        fi
+    fi
+    
     return 1
+}
+
+# Initialize colors before get_dotfiles_dir (needed for download messages)
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+print_info() {
+    echo -e "${BLUE}ℹ${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}✗${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
 }
 
 DOTFILES_DIR="$(get_dotfiles_dir)"
 if [[ -z "$DOTFILES_DIR" ]] || [[ ! -d "$DOTFILES_DIR/scripts" ]]; then
-    echo -e "\033[0;31m✗ Error: Cannot find dotfiles directory!\033[0m" >&2
+    print_error "Cannot find dotfiles directory!"
     echo "" >&2
     echo "Please clone the repository first:" >&2
     echo "  git clone https://github.com/RanielliMontagna/dotfiles.git" >&2
@@ -69,6 +164,14 @@ if [[ -z "$DOTFILES_DIR" ]] || [[ ! -d "$DOTFILES_DIR/scripts" ]]; then
     echo "" >&2
     echo "Or if you're already in the dotfiles directory, make sure the 'scripts/' folder exists." >&2
     exit 1
+fi
+
+# Check if we're using a temporary directory (downloaded from GitHub)
+USING_TEMP_DIR=false
+if [[ "$DOTFILES_DIR" == "$HOME/.dotfiles-temp" ]]; then
+    USING_TEMP_DIR=true
+    print_info "Using temporary directory with downloaded scripts"
+    print_info "Note: Scripts will be cleaned up after execution"
 fi
 
 SCRIPTS_DIR="$DOTFILES_DIR/scripts"
@@ -247,6 +350,13 @@ main() {
     
     print_header "✨ Setup Complete!"
     print_success "Your development environment is ready!"
+    
+    # Clean up temporary directory if we downloaded scripts
+    if [[ "$USING_TEMP_DIR" == "true" ]]; then
+        print_info "Cleaning up temporary files..."
+        rm -rf "$DOTFILES_DIR"
+        print_success "Cleanup complete"
+    fi
     
     # Show installation summary
     echo -e "\n${BLUE}════════════════════════════════════════════════════════════${NC}"
