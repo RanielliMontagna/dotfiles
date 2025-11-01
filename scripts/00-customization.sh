@@ -505,50 +505,86 @@ install_extension_from_zip() {
     local extension_dir="$extensions_dir/$extension_uuid"
     
     # Skip if already installed
-    if [[ -d "$extension_dir" ]]; then
+    if [[ -d "$extension_dir" ]] && [[ -f "$extension_dir/metadata.json" ]]; then
         print_info "Extension $extension_uuid already installed"
         return 0
     fi
     
-    print_info "Installing extension: $extension_uuid..."
+    print_info "Downloading extension: $extension_uuid from $download_url"
+    
+    # Validate URL
+    if [[ -z "$download_url" ]] || [[ "$download_url" == "null" ]]; then
+        print_warning "Invalid download URL for extension $extension_uuid"
+        return 1
+    fi
     
     # Create extensions directory
     mkdir -p "$extensions_dir"
     
     # Download extension ZIP
-    local zip_file="/tmp/${extension_uuid}.zip"
+    local zip_file="/tmp/${extension_uuid}-$(date +%s).zip"
+    local download_success=false
+    
     if command -v safe_curl_download_with_cache &> /dev/null; then
-        if ! safe_curl_download_with_cache "$download_url" "$zip_file" 3 120 30; then
-            print_warning "Failed to download extension $extension_uuid"
-            return 1
+        if safe_curl_download_with_cache "$download_url" "$zip_file" 3 120 30; then
+            download_success=true
         fi
     else
-        if ! curl -fsSL --max-time 120 --connect-timeout 30 --retry 3 -o "$zip_file" "$download_url"; then
-            print_warning "Failed to download extension $extension_uuid"
-            return 1
+        if curl -fsSL --max-time 120 --connect-timeout 30 --retry 3 -o "$zip_file" "$download_url" 2>/dev/null; then
+            download_success=true
         fi
     fi
     
+    # Verify ZIP file was downloaded and is valid
+    if [[ ! -f "$zip_file" ]] || [[ ! -s "$zip_file" ]]; then
+        print_warning "Failed to download extension $extension_uuid (file is empty or missing)"
+        rm -f "$zip_file" 2>/dev/null || true
+        return 1
+    fi
+    
+    # Check if it's a valid ZIP file
+    if ! command -v unzip &> /dev/null; then
+        print_warning "unzip not available, cannot extract extension"
+        rm -f "$zip_file" 2>/dev/null || true
+        return 1
+    fi
+    
+    # Test ZIP file integrity
+    if ! unzip -tq "$zip_file" >/dev/null 2>&1; then
+        print_warning "Downloaded file is not a valid ZIP for extension $extension_uuid"
+        rm -f "$zip_file" 2>/dev/null || true
+        return 1
+    fi
+    
     # Extract extension
-    if command -v unzip &> /dev/null; then
-        mkdir -p "$extension_dir"
-        if unzip -q -o "$zip_file" -d "$extension_dir" 2>/dev/null; then
-            # Check if files were extracted to a subdirectory
-            if [[ -d "$extension_dir/${extension_uuid}" ]]; then
-                mv "$extension_dir/${extension_uuid}"/* "$extension_dir/" 2>/dev/null || true
-                rmdir "$extension_dir/${extension_uuid}" 2>/dev/null || true
-            fi
-            rm -f "$zip_file"
-            print_success "Extension $extension_uuid extracted"
-            return 0
-        else
-            rm -f "$zip_file"
-            print_warning "Failed to extract extension $extension_uuid"
+    print_info "Extracting extension $extension_uuid..."
+    mkdir -p "$extension_dir"
+    
+    # Clean directory in case of partial previous installation
+    rm -rf "$extension_dir"/* 2>/dev/null || true
+    
+    if unzip -q -o "$zip_file" -d "$extension_dir" 2>/dev/null; then
+        # Check if files were extracted to a subdirectory
+        if [[ -d "$extension_dir/${extension_uuid}" ]]; then
+            mv "$extension_dir/${extension_uuid}"/* "$extension_dir/" 2>/dev/null || true
+            rmdir "$extension_dir/${extension_uuid}" 2>/dev/null || true
+        fi
+        
+        # Verify metadata.json exists
+        if [[ ! -f "$extension_dir/metadata.json" ]]; then
+            print_warning "Extension $extension_uuid extracted but metadata.json not found"
+            rm -rf "$extension_dir" 2>/dev/null || true
+            rm -f "$zip_file" 2>/dev/null || true
             return 1
         fi
+        
+        rm -f "$zip_file" 2>/dev/null || true
+        print_success "Extension $extension_uuid installed successfully"
+        return 0
     else
-        rm -f "$zip_file"
-        print_warning "unzip not available, cannot extract extension"
+        print_warning "Failed to extract extension $extension_uuid"
+        rm -rf "$extension_dir" 2>/dev/null || true
+        rm -f "$zip_file" 2>/dev/null || true
         return 1
     fi
 }
@@ -655,17 +691,47 @@ configure_system_extensions() {
     # Install Clipboard Indicator
     print_info "Installing Clipboard Indicator extension..."
     local clipboard_id="779"  # Extension ID from extensions.gnome.org
-    local clipboard_url
-    clipboard_url=$(get_extension_download_url "$clipboard_id" "$major_version" 2>/dev/null || echo "")
+    local clipboard_uuid="clipboard-indicator@tudmotu.com"
+    local clipboard_url=""
     
-    # Fallback to direct URL if API fails
-    if [[ -z "$clipboard_url" ]]; then
-        # Try common version URLs
-        clipboard_url="https://extensions.gnome.org/extension-data/clipboard-indicator@tudmotu.com.v47.shell-extension.zip"
+    # Try to get download URL from API
+    print_info "Fetching compatible version from extensions.gnome.org..."
+    clipboard_url=$(get_extension_download_url "$clipboard_id" "$gnome_version" 2>/dev/null || echo "")
+    
+    # If API failed, try with major version only
+    if [[ -z "$clipboard_url" ]] || [[ "$clipboard_url" == "null" ]]; then
+        print_info "Trying with major version..."
+        clipboard_url=$(get_extension_download_url "$clipboard_id" "${major_version}.0" 2>/dev/null || echo "")
     fi
     
-    if install_extension_from_zip "clipboard-indicator@tudmotu.com" "$clipboard_url"; then
-        enable_extension "clipboard-indicator@tudmotu.com"
+    # Multiple fallback URLs for different versions
+    if [[ -z "$clipboard_url" ]] || [[ "$clipboard_url" == "null" ]]; then
+        print_info "Using fallback URLs..."
+        # Try multiple common version numbers
+        local fallback_versions=("47" "46" "45" "44" "43" "42")
+        for version in "${fallback_versions[@]}"; do
+            local test_url="https://extensions.gnome.org/extension-data/${clipboard_uuid}.v${version}.shell-extension.zip"
+            print_info "Trying version $version..."
+            if curl -sLf --head --max-time 10 "$test_url" >/dev/null 2>&1; then
+                clipboard_url="$test_url"
+                print_success "Found compatible version: $version"
+                break
+            fi
+        done
+    fi
+    
+    if [[ -z "$clipboard_url" ]] || [[ "$clipboard_url" == "null" ]]; then
+        print_warning "Could not find download URL for Clipboard Indicator"
+        print_info "You can install it manually via Extension Manager or visit:"
+        print_info "  https://extensions.gnome.org/extension/${clipboard_id}/clipboard-indicator/"
+    elif install_extension_from_zip "$clipboard_uuid" "$clipboard_url"; then
+        print_info "Enabling Clipboard Indicator..."
+        if enable_extension "$clipboard_uuid"; then
+            print_success "Clipboard Indicator installed and enabled"
+        else
+            print_warning "Clipboard Indicator installed but could not be enabled automatically"
+            print_info "Please enable it manually via Extension Manager"
+        fi
     else
         print_warning "Could not install Clipboard Indicator automatically"
         print_info "You can install it manually via Extension Manager or visit:"
@@ -675,31 +741,60 @@ configure_system_extensions() {
     # Install Vitals (most comprehensive - temperature, CPU, memory, network, battery)
     print_info "Installing Vitals extension..."
     local vitals_id="1460"  # Extension ID from extensions.gnome.org
-    local vitals_url
-    vitals_url=$(get_extension_download_url "$vitals_id" "$major_version" 2>/dev/null || echo "")
+    local vitals_uuid="Vitals@CoreCoding.com"
+    local vitals_url=""
     
-    # Fallback to direct URL if API fails
-    if [[ -z "$vitals_url" ]]; then
-        # Try common version URLs
-        vitals_url="https://extensions.gnome.org/extension-data/vitals@CoreCoding.com.v85.shell-extension.zip"
+    # Try to get download URL from API
+    print_info "Fetching compatible version from extensions.gnome.org..."
+    vitals_url=$(get_extension_download_url "$vitals_id" "$gnome_version" 2>/dev/null || echo "")
+    
+    # If API failed, try with major version only
+    if [[ -z "$vitals_url" ]] || [[ "$vitals_url" == "null" ]]; then
+        print_info "Trying with major version..."
+        vitals_url=$(get_extension_download_url "$vitals_id" "${major_version}.0" 2>/dev/null || echo "")
     fi
     
-    if install_extension_from_zip "Vitals@CoreCoding.com" "$vitals_url"; then
-        enable_extension "Vitals@CoreCoding.com"
-        
-        # Configure Vitals to show temperature, CPU, memory, network, battery
-        if command -v dconf &> /dev/null; then
-            print_info "Configuring Vitals settings..."
-            dconf write /org/gnome/shell/extensions/vitals/show-temperature "true" 2>/dev/null || true
-            dconf write /org/gnome/shell/extensions/vitals/show-voltage "false" 2>/dev/null || true
-            dconf write /org/gnome/shell/extensions/vitals/show-fan "false" 2>/dev/null || true
-            dconf write /org/gnome/shell/extensions/vitals/show-frequency "false" 2>/dev/null || true
-            dconf write /org/gnome/shell/extensions/vitals/show-memory "true" 2>/dev/null || true
-            dconf write /org/gnome/shell/extensions/vitals/show-cpu "true" 2>/dev/null || true
-            dconf write /org/gnome/shell/extensions/vitals/show-network "true" 2>/dev/null || true
-            dconf write /org/gnome/shell/extensions/vitals/show-disk "false" 2>/dev/null || true
-            dconf write /org/gnome/shell/extensions/vitals/show-battery "true" 2>/dev/null || true
-            print_success "Vitals configured (temperature, CPU, memory, network, battery)"
+    # Multiple fallback URLs for different versions
+    if [[ -z "$vitals_url" ]] || [[ "$vitals_url" == "null" ]]; then
+        print_info "Using fallback URLs..."
+        # Try multiple common version numbers
+        local fallback_versions=("85" "84" "83" "82" "81" "80")
+        for version in "${fallback_versions[@]}"; do
+            local test_url="https://extensions.gnome.org/extension-data/${vitals_uuid}.v${version}.shell-extension.zip"
+            print_info "Trying version $version..."
+            if curl -sLf --head --max-time 10 "$test_url" >/dev/null 2>&1; then
+                vitals_url="$test_url"
+                print_success "Found compatible version: $version"
+                break
+            fi
+        done
+    fi
+    
+    if [[ -z "$vitals_url" ]] || [[ "$vitals_url" == "null" ]]; then
+        print_warning "Could not find download URL for Vitals"
+        print_info "You can install it manually via Extension Manager"
+    elif install_extension_from_zip "$vitals_uuid" "$vitals_url"; then
+        print_info "Enabling Vitals..."
+        if enable_extension "$vitals_uuid"; then
+            print_success "Vitals installed and enabled"
+            
+            # Configure Vitals to show temperature, CPU, memory, network, battery
+            if command -v dconf &> /dev/null; then
+                print_info "Configuring Vitals settings..."
+                dconf write /org/gnome/shell/extensions/vitals/show-temperature "true" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-voltage "false" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-fan "false" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-frequency "false" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-memory "true" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-cpu "true" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-network "true" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-disk "false" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-battery "true" 2>/dev/null || true
+                print_success "Vitals configured (temperature, CPU, memory, network, battery)"
+            fi
+        else
+            print_warning "Vitals installed but could not be enabled automatically"
+            print_info "Please enable it manually via Extension Manager"
         fi
     else
         print_warning "Could not install Vitals automatically"
