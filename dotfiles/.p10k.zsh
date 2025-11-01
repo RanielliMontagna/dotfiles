@@ -41,6 +41,7 @@
   local grey='242'
   local red='#FF5C57'
   local yellow='#F3F99D'
+  local green='#5AF78E'
   local blue='#57C7FF'
   local magenta='#FF6AC1'
   local cyan='#9AEDFE'
@@ -49,22 +50,31 @@
   # Left prompt segments.
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
     # =========================[ Line #1 ]=========================
-    # context                 # user@host
+    os_icon                   # os identifier
     dir                       # current directory
     vcs                       # git status
-    # command_execution_time  # previous command duration
+    command_execution_time    # previous command duration (if >= 5s)
     # =========================[ Line #2 ]=========================
     newline                   # \n
-    # virtualenv              # python virtual environment
+    context                   # user@host (when relevant)
+    virtualenv                # python virtual environment
+    anaconda                  # conda environment
+    pyenv                     # pyenv python version
+    goenv                     # goenv go version
+    nodenv                    # nodenv node version
+    nvm                       # node version manager
+    nodeenv                   # node virtual environment
+    node_version              # node version
+    background_jobs           # background jobs indicator
     prompt_char               # prompt symbol
   )
 
   # Right prompt segments.
   typeset -g POWERLEVEL9K_RIGHT_PROMPT_ELEMENTS=(
     # =========================[ Line #1 ]=========================
+    status                    # exit code of the last command
     command_execution_time    # previous command duration
-    virtualenv                # python virtual environment
-    context                   # user@host
+    history                   # history number
     time                      # current time
     # =========================[ Line #2 ]=========================
     newline                   # \n
@@ -72,10 +82,13 @@
 
   # Basic style options that define the overall prompt look.
   typeset -g POWERLEVEL9K_BACKGROUND=                            # transparent background
-  typeset -g POWERLEVEL9K_{LEFT,RIGHT}_{LEFT,RIGHT}_WHITESPACE=  # no surrounding whitespace
-  typeset -g POWERLEVEL9K_{LEFT,RIGHT}_SUBSEGMENT_SEPARATOR=' '  # separate segments with a space
-  typeset -g POWERLEVEL9K_{LEFT,RIGHT}_SEGMENT_SEPARATOR=        # no end-of-line symbol
-  typeset -g POWERLEVEL9K_VISUAL_IDENTIFIER_EXPANSION=           # no segment icons
+  typeset -g POWERLEVEL9K_LEFT_WHITESPACE=                       # whitespace after left segments
+  typeset -g POWERLEVEL9K_RIGHT_WHITESPACE=                      # whitespace before right segments
+  typeset -g POWERLEVEL9K_LEFT_SUBSEGMENT_SEPARATOR=' '          # separate left segments with a space
+  typeset -g POWERLEVEL9K_RIGHT_SUBSEGMENT_SEPARATOR=' '         # separate right segments with a space
+  typeset -g POWERLEVEL9K_LEFT_SEGMENT_SEPARATOR=''              # no left segment separator
+  typeset -g POWERLEVEL9K_RIGHT_SEGMENT_SEPARATOR=''             # no right segment separator
+  typeset -g POWERLEVEL9K_VISUAL_IDENTIFIER_EXPANSION='${P9K_VISUAL_IDENTIFIER}'  # show segment icons
 
   # Add an empty line before each prompt except the first. This doesn't emulate the bug
   # in Pure that makes prompt drift down whenever you use the Alt-C binding from fzf or similar.
@@ -94,21 +107,32 @@
   # Prompt symbol in overwrite vi mode is the same as in command mode.
   typeset -g POWERLEVEL9K_PROMPT_CHAR_OVERWRITE_STATE=false
 
-  # Grey Python Virtual Environment.
-  typeset -g POWERLEVEL9K_VIRTUALENV_FOREGROUND=$grey
-  # Don't show Python version.
-  typeset -g POWERLEVEL9K_VIRTUALENV_SHOW_PYTHON_VERSION=false
-  typeset -g POWERLEVEL9K_VIRTUALENV_{LEFT,RIGHT}_DELIMITER=
-
-  # Blue current directory.
+  # Current directory - show full path, color by permission and write state.
   typeset -g POWERLEVEL9K_DIR_FOREGROUND=$blue
+  typeset -g POWERLEVEL9K_DIR_SHORTENED_FOREGROUND=$blue
+  typeset -g POWERLEVEL9K_DIR_ANCHOR_FOREGROUND=$cyan
+  typeset -g POWERLEVEL9K_DIR_SHORTEN_LEN=2
+  typeset -g POWERLEVEL9K_DIR_MAX_LENGTH=80
+  # Show only the last two directory components by default.
+  typeset -g POWERLEVEL9K_SHORTEN_STRATEGY=truncate_with_folder_marker
+  # Also shorten when directory is longer than this many characters.
+  typeset -g POWERLEVEL9K_SHORTEN_DIR_LENGTH=1
+  # Show the full directory name when it's shorter than this many characters.
+  typeset -g POWERLEVEL9K_SHORTEN_DELIMITER=
+  # Enable directory shortening in the left prompt.
+  typeset -g POWERLEVEL9K_DIR_MIN_COMMAND_COLUMNS=40
+  typeset -g POWERLEVEL9K_DIR_MIN_COMMAND_COLUMNS_PCT=50
 
   # Context format when root: user@host. The first part white, the rest grey.
   typeset -g POWERLEVEL9K_CONTEXT_ROOT_TEMPLATE="%F{$white}%n%f%F{$grey}@%m%f"
-  # Context format when not root: user@host. The whole thing grey.
-  typeset -g POWERLEVEL9K_CONTEXT_TEMPLATE="%F{$grey}%n@%m%f"
-  # Don't show context unless root or in SSH.
-  typeset -g POWERLEVEL9K_CONTEXT_{DEFAULT,SUDO}_CONTENT_EXPANSION=
+  # Context format when not root: user@host. Show in cyan when SSH, grey otherwise.
+  typeset -g POWERLEVEL9K_CONTEXT_TEMPLATE="%F{$cyan}%n@%m%f"
+  # Show context when root, in SSH, or when user is not default.
+  # Uncomment the line below and set DEFAULT_USER to hide context when not needed.
+  # typeset -g DEFAULT_USER='your-username'
+  typeset -g POWERLEVEL9K_CONTEXT_DEFAULT_CONTENT_EXPANSION=
+  typeset -g POWERLEVEL9K_CONTEXT_FOREGROUND=$cyan
+  typeset -g POWERLEVEL9K_CONTEXT_ROOT_FOREGROUND=$red
 
   # Show previous command duration only if it's >= 5s.
   typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_THRESHOLD=5
@@ -119,37 +143,113 @@
   # Yellow previous command duration.
   typeset -g POWERLEVEL9K_COMMAND_EXECUTION_TIME_FOREGROUND=$yellow
 
-  # Grey Git prompt. This makes stale prompts indistinguishable from up-to-date ones.
-  typeset -g POWERLEVEL9K_VCS_FOREGROUND=$grey
-
-  # Disable async loading indicator to make directories that aren't Git repositories
-  # indistinguishable from large Git repositories without known state.
-  typeset -g POWERLEVEL9K_VCS_LOADING_TEXT=
-
-  # Don't wait for Git status even for a millisecond, so that prompt always updates
-  # asynchronously when Git state changes.
-  typeset -g POWERLEVEL9K_VCS_MAX_SYNC_LATENCY_SECONDS=0
-
-  # Cyan ahead/behind arrows.
-  typeset -g POWERLEVEL9K_VCS_{INCOMING,OUTGOING}_CHANGESFORMAT_FOREGROUND=$cyan
-  # Don't show remote branch, current tag or stashes.
-  typeset -g POWERLEVEL9K_VCS_GIT_HOOKS=(vcs-detect-changes git-untracked git-aheadbehind)
-  # Don't show the branch icon.
-  typeset -g POWERLEVEL9K_VCS_BRANCH_ICON=
-  # When in detached HEAD state, show @commit where branch normally goes.
+  # Git prompt - show detailed status with colors.
+  typeset -g POWERLEVEL9K_VCS_FOREGROUND=$cyan
+  typeset -g POWERLEVEL9K_VCS_BACKGROUND=
+  typeset -g POWERLEVEL9K_VCS_DISABLED_WORKDIR_PATTERN='(^~|/mnt/|/media/)'
+  
+  # Git status icons and colors.
+  typeset -g POWERLEVEL9K_VCS_BRANCH_ICON=''
   typeset -g POWERLEVEL9K_VCS_COMMIT_ICON='@'
-  # Don't show staged, unstaged, untracked indicators.
-  typeset -g POWERLEVEL9K_VCS_{STAGED,UNSTAGED,UNTRACKED}_ICON=
-  # Show '*' when there are staged, unstaged or untracked files.
-  typeset -g POWERLEVEL9K_VCS_DIRTY_ICON='*'
-  # Show '⇣' if local branch is behind remote.
-  typeset -g POWERLEVEL9K_VCS_INCOMING_CHANGES_ICON=':⇣'
-  # Show '⇡' if local branch is ahead of remote.
-  typeset -g POWERLEVEL9K_VCS_OUTGOING_CHANGES_ICON=':⇡'
-  # Don't show the number of commits next to the ahead/behind arrows.
-  typeset -g POWERLEVEL9K_VCS_{COMMITS_AHEAD,COMMITS_BEHIND}_MAX_NUM=1
-  # Remove space between '⇣' and '⇡' and all trailing spaces.
-  typeset -g POWERLEVEL9K_VCS_CONTENT_EXPANSION='${${${P9K_CONTENT/⇣* :⇡/⇣⇡}// }//:/ }'
+  typeset -g POWERLEVEL9K_VCS_TAG_ICON='tag'
+  typeset -g POWERLEVEL9K_VCS_UNTRACKED_ICON='?'
+  typeset -g POWERLEVEL9K_VCS_UNSTAGED_ICON='!'
+  typeset -g POWERLEVEL9K_VCS_STAGED_ICON='+'
+  
+  # Git status colors.
+  typeset -g POWERLEVEL9K_VCS_MODIFIED_FOREGROUND=$yellow
+  typeset -g POWERLEVEL9K_VCS_MODIFIED_BACKGROUND=
+  typeset -g POWERLEVEL9K_VCS_UNTRACKED_FOREGROUND=$yellow
+  typeset -g POWERLEVEL9K_VCS_UNTRACKED_BACKGROUND=
+  typeset -g POWERLEVEL9K_VCS_STAGED_FOREGROUND=$green
+  typeset -g POWERLEVEL9K_VCS_STAGED_BACKGROUND=
+  typeset -g POWERLEVEL9K_VCS_UNSTAGED_FOREGROUND=$red
+  typeset -g POWERLEVEL9K_VCS_UNSTAGED_BACKGROUND=
+  
+  # Show ahead/behind indicators.
+  typeset -g POWERLEVEL9K_VCS_INCOMING_CHANGES_ICON='⇣'
+  typeset -g POWERLEVEL9K_VCS_OUTGOING_CHANGES_ICON='⇡'
+  typeset -g POWERLEVEL9K_VCS_INCOMING_CHANGESFORMAT_FOREGROUND=$cyan
+  typeset -g POWERLEVEL9K_VCS_OUTGOING_CHANGESFORMAT_FOREGROUND=$magenta
+  typeset -g POWERLEVEL9K_VCS_{COMMITS_AHEAD,COMMITS_BEHIND}_MAX_NUM=99
+  
+  # Git hooks to show status.
+  typeset -g POWERLEVEL9K_VCS_GIT_HOOKS=(
+    vcs-detect-changes
+    git-untracked
+    git-ahead-behind
+    git-stash
+    git-remotebranch
+    git-tagname
+  )
+  
+  # Show loading indicator.
+  typeset -g POWERLEVEL9K_VCS_LOADING_TEXT='loading…'
+  
+  # Max sync latency - update promptly.
+  typeset -g POWERLEVEL9K_VCS_MAX_SYNC_LATENCY_SECONDS=1
+  
+  # Show detailed git status with icons and colors.
+  typeset -g POWERLEVEL9K_VCS_BACKEND=git
+
+  # OS icon - show system identifier.
+  typeset -g POWERLEVEL9K_OS_ICON_FOREGROUND=$white
+  typeset -g POWERLEVEL9K_OS_ICON_BACKGROUND=
+
+  # Status - show exit code if non-zero.
+  typeset -g POWERLEVEL9K_STATUS_EXTENDED_STATES=true
+  typeset -g POWERLEVEL9K_STATUS_OK=false
+  typeset -g POWERLEVEL9K_STATUS_OK_FOREGROUND=$green
+  typeset -g POWERLEVEL9K_STATUS_OK_VISUAL_IDENTIFIER_EXPANSION='✓'
+  typeset -g POWERLEVEL9K_STATUS_ERROR_FOREGROUND=$red
+  typeset -g POWERLEVEL9K_STATUS_ERROR_VISUAL_IDENTIFIER_EXPANSION='✘'
+
+  # History - show history number.
+  typeset -g POWERLEVEL9K_HISTORY_FOREGROUND=$grey
+  typeset -g POWERLEVEL9K_HISTORY_BACKGROUND=
+
+  # Background jobs - show if there are background jobs.
+  typeset -g POWERLEVEL9K_BACKGROUND_JOBS_VERBOSE=true
+  typeset -g POWERLEVEL9K_BACKGROUND_JOBS_FOREGROUND=$yellow
+  typeset -g POWERLEVEL9K_BACKGROUND_JOBS_BACKGROUND=
+  typeset -g POWERLEVEL9K_BACKGROUND_JOBS_VISUAL_IDENTIFIER_EXPANSION='${P9K_VISUAL_IDENTIFIER}'
+
+  # Node version - show current Node.js version.
+  typeset -g POWERLEVEL9K_NODE_VERSION_FOREGROUND=$green
+  typeset -g POWERLEVEL9K_NODE_VERSION_BACKGROUND=
+  typeset -g POWERLEVEL9K_NODE_VERSION_PROJECT_ONLY=true
+
+  # NVM - show Node Version Manager version.
+  typeset -g POWERLEVEL9K_NVM_FOREGROUND=$green
+  typeset -g POWERLEVEL9K_NVM_BACKGROUND=
+  typeset -g POWERLEVEL9K_NVM_SOURCES=(nvm nodebrew)
+
+  # Virtualenv - show Python virtual environment.
+  typeset -g POWERLEVEL9K_VIRTUALENV_FOREGROUND=$cyan
+  typeset -g POWERLEVEL9K_VIRTUALENV_SHOW_PYTHON_VERSION=true
+  typeset -g POWERLEVEL9K_VIRTUALENV_{LEFT,RIGHT}_DELIMITER=' '
+
+  # Anaconda - show conda environment.
+  typeset -g POWERLEVEL9K_ANACONDA_FOREGROUND=$cyan
+  typeset -g POWERLEVEL9K_ANACONDA_BACKGROUND=
+  typeset -g POWERLEVEL9K_ANACONDA_SHOW_PYTHON_VERSION=true
+
+  # Pyenv - show Python version from pyenv.
+  typeset -g POWERLEVEL9K_PYENV_FOREGROUND=$cyan
+  typeset -g POWERLEVEL9K_PYENV_BACKGROUND=
+  typeset -g POWERLEVEL9K_PYENV_SOURCES=(shell local global)
+
+  # Goenv - show Go version from goenv.
+  typeset -g POWERLEVEL9K_GOENV_FOREGROUND=$cyan
+  typeset -g POWERLEVEL9K_GOENV_BACKGROUND=
+
+  # Nodenv - show Node version from nodenv.
+  typeset -g POWERLEVEL9K_NODENV_FOREGROUND=$green
+  typeset -g POWERLEVEL9K_NODENV_BACKGROUND=
+
+  # Nodeenv - show Node virtual environment.
+  typeset -g POWERLEVEL9K_NODEENV_FOREGROUND=$green
+  typeset -g POWERLEVEL9K_NODEENV_BACKGROUND=
 
   # Grey current time.
   typeset -g POWERLEVEL9K_TIME_FOREGROUND=$grey
