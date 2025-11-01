@@ -45,6 +45,17 @@ export SDKMAN_DIR="$HOME/.sdkman"
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 
+# Android SDK
+if [[ -d "$HOME/Android/Sdk" ]]; then
+    export ANDROID_HOME="$HOME/Android/Sdk"
+    export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
+    export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
+elif [[ -d "$HOME/snap/android-studio/current/Android/Sdk" ]]; then
+    export ANDROID_HOME="$HOME/snap/android-studio/current/Android/Sdk"
+    export ANDROID_SDK_ROOT="$HOME/snap/android-studio/current/Android/Sdk"
+    export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/tools"
+fi
+
 # Load aliases
 if [ -f ~/.aliases ]; then
     source ~/.aliases
