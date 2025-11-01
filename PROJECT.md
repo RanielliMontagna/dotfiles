@@ -118,7 +118,9 @@ dotfiles/
 
 **Configuration**:
 
+- Creates project directory: `~/www/personal/`
 - Symlinks dotfiles from `dotfiles/` to `~/`
+- Copies Git configuration file (`.gitconfig-my`) to home (not symlinked, so it can be customized)
 - Backs up existing files with `.backup` suffix
 - Sets Zsh as default shell (`chsh -s $(which zsh)`)
 
@@ -128,7 +130,11 @@ dotfiles/
 - `dotfiles/.gitconfig` → `~/.gitconfig`
 - `dotfiles/.aliases` → `~/.aliases`
 
-**Idempotency**: Checks for `.oh-my-zsh` directory and plugin directories
+**Files copied** (not symlinked, so they can be customized):
+
+- `dotfiles/.gitconfig-my` → `~/.gitconfig-my` (for personal projects)
+
+**Idempotency**: Checks for `.oh-my-zsh` directory, plugin directories, existing project directories, and existing Git config files
 
 ---
 
@@ -399,17 +405,19 @@ dotfiles/
 
 ### dotfiles/.gitconfig
 
-**Purpose**: Git global configuration with useful aliases.
+**Purpose**: Git global configuration with conditional includes and useful aliases.
 
 **Contents**:
 
+- **Conditional Includes** (`includeIf`):
+  - `~/www/personal/` → loads `~/.gitconfig-my`
 - **Aliases** (15+):
   - `lg` - Pretty log graph
   - `last` - Show last commit
   - `undo` - Undo last commit (keep changes)
   - `branches` - List all branches
   - `cleanup` - Delete merged branches
-  - `st` - Status short
+  - `s` - Status short
   - And more...
 - **Diff**: Uses `histogram` algorithm (better for large files)
 - **Colors**: Enabled for better readability
@@ -417,6 +425,22 @@ dotfiles/
 - **Merge tool**: VS Code/Cursor as merge/conflict tool
 
 **Location after install**: `~/.gitconfig` (symlinked)
+
+---
+
+### dotfiles/.gitconfig-my
+
+**Purpose**: Git configuration for personal projects (my, esperto, mythral).
+
+**Contents**:
+
+- **User info**:
+  - name: Ranielli Montagna
+  - email: raniellimontagna@hotmail.com
+- **SSH configuration**:
+  - Uses `ssh://git@github.com/` instead of `https://github.com/`
+
+**Location after install**: `~/.gitconfig-my` (copied, not symlinked - can be customized)
 
 ---
 

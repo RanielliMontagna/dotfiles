@@ -1,12 +1,8 @@
-# Git Configuration Template
-# After installation, customize with your details:
-# git config --global user.name "Your Name"
-# git config --global user.email "your.email@example.com"
+# Git Configuration with Conditional Includes
+# This file uses includeIf to load different configurations based on directory
 
-[user]
-    # These will be empty by default - set them after installation
-    # name = Your Name
-    # email = your.email@example.com
+[includeIf "gitdir:~/www/personal/"]
+    path = ~/.gitconfig-my
 
 [core]
     editor = vim

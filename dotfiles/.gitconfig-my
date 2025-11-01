@@ -1,0 +1,10 @@
+# Git Configuration for Personal Projects
+# This file is loaded for projects in ~/www/personal/
+
+[user]
+    name = Ranielli Montagna
+    email = raniellimontagna@hotmail.com
+
+[url "ssh://git@github.com/"]
+    insteadOf = https://github.com/
+

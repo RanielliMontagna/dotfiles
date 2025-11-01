@@ -139,10 +139,25 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 All configuration files are in the `dotfiles/` directory and are symlinked to your home:
 
 - **`.zshrc`** - Zsh configuration with plugins, theme, and custom functions
-- **`.gitconfig`** - Git aliases, better diffs, and sensible defaults
+- **`.gitconfig`** - Git aliases, better diffs, and conditional includes
 - **`.aliases`** - Hundreds of useful aliases for Git, Docker, npm, and more
 
+### Git Configuration with Conditional Includes
+
+The Git configuration uses `includeIf` to automatically load different settings based on project location:
+
+- **`~/.gitconfig`** - Main configuration (symlinked, contains common aliases and settings)
+- **`~/.gitconfig-my`** - Personal projects configuration (auto-created)
+  - Used for: `~/www/personal/`
+  - Pre-configured with your personal name, email, and SSH settings
+
 After installation, your existing files will be backed up to `~/.filename.backup`.
+
+### Project Directories
+
+The setup automatically creates the following project directory for personal projects:
+
+- `~/www/personal/`
 
 ---
 
@@ -178,12 +193,15 @@ After running the bootstrap script:
 source ~/.zshrc
 ```
 
-### 2. Configure Git with Your Details
+### 2. Configure Git (Optional - Personal projects already configured)
 
-```bash
-git config --global user.name "Your Name"
-git config --global user.email "your.email@example.com"
-```
+Personal projects in `~/www/personal/` are already configured with:
+
+- Name: Ranielli Montagna
+- Email: raniellimontagna@hotmail.com
+- SSH: Uses `ssh://git@github.com/` instead of `https://github.com/`
+
+If you need to add work projects later, you can create a new config file (e.g., `~/.gitconfig-work`) and add an `includeIf` entry in `~/.gitconfig` pointing to it.
 
 ### 3. Configure Powerlevel10k Theme
 

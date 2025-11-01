@@ -84,6 +84,21 @@ main() {
         print_success "Powerlevel10k installed"
     fi
     
+    # Create project directories structure
+    print_info "Creating project directories..."
+    PROJECT_DIRS=(
+        "$HOME/www/personal"
+    )
+    
+    for dir in "${PROJECT_DIRS[@]}"; do
+        if [[ -d "$dir" ]]; then
+            print_info "Directory $dir already exists"
+        else
+            mkdir -p "$dir"
+            print_success "Created directory $dir"
+        fi
+    done
+    
     # Link dotfiles
     print_info "Linking dotfiles..."
     
@@ -95,10 +110,24 @@ main() {
         fi
     done
     
-    # Create symlinks
+    # Backup existing Git config files if they exist and are not symlinks
+    if [[ -f "$HOME/.gitconfig-my" ]] && [[ ! -L "$HOME/.gitconfig-my" ]]; then
+        print_warning "Backing up existing .gitconfig-my to .gitconfig-my.backup"
+        mv "$HOME/.gitconfig-my" "$HOME/.gitconfig-my.backup"
+    fi
+    
+    # Create symlinks for main dotfiles
     ln -sf "$DOTFILES_CONFIG_DIR/.zshrc" "$HOME/.zshrc"
     ln -sf "$DOTFILES_CONFIG_DIR/.gitconfig" "$HOME/.gitconfig"
     ln -sf "$DOTFILES_CONFIG_DIR/.aliases" "$HOME/.aliases"
+    
+    # Copy Git config file for personal projects (not symlinked, so it can be customized)
+    if [[ ! -f "$HOME/.gitconfig-my" ]]; then
+        cp "$DOTFILES_CONFIG_DIR/.gitconfig-my" "$HOME/.gitconfig-my"
+        print_success "Created ~/.gitconfig-my"
+    else
+        print_info ".gitconfig-my already exists (skipping)"
+    fi
     
     print_success "Dotfiles linked"
     
