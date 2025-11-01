@@ -51,6 +51,34 @@ main() {
     export SDKMAN_DIR="$HOME/.sdkman"
     [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
     
+    # Helper function to check if Java version is already installed
+    is_java_installed() {
+        local version_pattern=$1
+        
+        # Method 1: Check sdk list java output (most reliable)
+        if command -v sdk &> /dev/null; then
+            local list_output
+            list_output=$(sdk list java 2>/dev/null || true)
+            if echo "$list_output" | grep -qE "${version_pattern}.*installed"; then
+                return 0  # Found in list
+            fi
+        fi
+        
+        # Method 2: Check for directories matching the pattern
+        local java_candidates_dir="$HOME/.sdkman/candidates/java"
+        if [[ -d "$java_candidates_dir" ]]; then
+            # Use find instead of glob to avoid issues with no matches
+            local found_dirs
+            found_dirs=$(find "$java_candidates_dir" -maxdepth 1 -type d -name "${version_pattern}*" 2>/dev/null || true)
+            if [[ -n "$found_dirs" ]]; then
+                # Found at least one directory matching the pattern
+                return 0
+            fi
+        fi
+        
+        return 1  # Not found
+    }
+    
     # Install Java versions
     print_info "Installing Java SDK versions..."
     
@@ -60,11 +88,22 @@ main() {
         shift
         local versions=("$@")
         
-        if sdk list java | grep -q "${version_pattern}.*installed" || [[ -d "$HOME/.sdkman/candidates/java/${version_pattern}"* ]]; then
+        # First check if already installed using our robust function
+        if is_java_installed "$version_pattern"; then
             return 0  # Already installed
         fi
         
         for version in "${versions[@]}"; do
+            # Double-check before attempting installation (might have been installed by another process)
+            if is_java_installed "$version_pattern"; then
+                return 0  # Already installed
+            fi
+            
+            # Check if this specific version is already installed
+            if [[ -d "$HOME/.sdkman/candidates/java/${version}" ]]; then
+                return 0  # This exact version is installed
+            fi
+            
             print_info "Attempting to install Java ${version}..."
             
             # SDKMAN asks "Do you want java X to be set as default? (Y/n):"
@@ -73,6 +112,15 @@ main() {
             local install_output
             install_output=$(printf "n\n" | sdk install java "$version" 2>&1)
             local install_status=$?
+            
+            # Check if output says "already installed" or similar
+            if echo "$install_output" | grep -qiE "(already installed|is already)"; then
+                # It's already installed, verify and return success
+                sleep 1
+                if is_java_installed "$version_pattern"; then
+                    return 0
+                fi
+            fi
             
             # Show any errors (but not the full verbose output)
             if echo "$install_output" | grep -qiE "(not found|not available|invalid|cannot find|unable to)"; then
@@ -90,23 +138,13 @@ main() {
             # Installation can take time, so we wait a bit
             sleep 4
             
-            # Check if installation was successful by verifying it's in the installed list
-            # Use a pattern match that's more flexible
-            local installed_versions
-            installed_versions=$(sdk list java | grep -E "${version_pattern}.*installed" || true)
-            
-            if [[ -n "$installed_versions" ]]; then
-                # Found installed version matching pattern
-                return 0
+            # Verify installation using our robust function
+            if is_java_installed "$version_pattern"; then
+                return 0  # Successfully installed
             fi
             
-            # Also check if the directory exists as fallback (SDKMAN uses exact version names)
+            # Also check if this exact version directory exists
             if [[ -d "$HOME/.sdkman/candidates/java/${version}" ]]; then
-                return 0
-            fi
-            
-            # Check for any directory matching the major version pattern
-            if ls -d "$HOME/.sdkman/candidates/java/${version_pattern}"* 2>/dev/null | head -1 | grep -q .; then
                 return 0
             fi
             
@@ -114,8 +152,7 @@ main() {
             if [[ $install_status -eq 0 ]]; then
                 sleep 3
                 # Try checking again
-                installed_versions=$(sdk list java | grep -E "${version_pattern}.*installed" || true)
-                if [[ -n "$installed_versions" ]] || [[ -d "$HOME/.sdkman/candidates/java/${version}" ]]; then
+                if is_java_installed "$version_pattern"; then
                     return 0
                 fi
             fi
@@ -125,7 +162,7 @@ main() {
     }
     
     # Java 8
-    if sdk list java | grep -q "8.0.*installed" || [[ -d "$HOME/.sdkman/candidates/java/8.0"* ]]; then
+    if is_java_installed "8.0"; then
         print_info "Java 8 already installed"
     else
         print_info "Installing Java 8..."
@@ -134,7 +171,7 @@ main() {
             print_success "Java 8 installed"
         elif printf "n\n" | sdk install java 8-tem 2>&1 | grep -q "installed"; then
             sleep 2
-            if sdk list java | grep -q "8.0.*installed"; then
+            if is_java_installed "8.0"; then
                 print_success "Java 8 installed"
             else
                 print_warning "Failed to install Java 8, continuing..."
@@ -145,7 +182,7 @@ main() {
     fi
     
     # Java 11
-    if sdk list java | grep -q "11.0.*installed" || [[ -d "$HOME/.sdkman/candidates/java/11.0"* ]]; then
+    if is_java_installed "11.0"; then
         print_info "Java 11 already installed"
     else
         print_info "Installing Java 11..."
@@ -154,7 +191,7 @@ main() {
             print_success "Java 11 installed"
         elif printf "n\n" | sdk install java 11-tem 2>&1 | grep -q "installed"; then
             sleep 2
-            if sdk list java | grep -q "11.0.*installed"; then
+            if is_java_installed "11.0"; then
                 print_success "Java 11 installed"
             else
                 print_warning "Failed to install Java 11, continuing..."
@@ -165,7 +202,7 @@ main() {
     fi
     
     # Java 17
-    if sdk list java | grep -q "17.0.*installed" || [[ -d "$HOME/.sdkman/candidates/java/17.0"* ]]; then
+    if is_java_installed "17.0"; then
         print_info "Java 17 already installed"
     else
         print_info "Installing Java 17..."
@@ -174,7 +211,7 @@ main() {
             print_success "Java 17 installed"
         elif printf "n\n" | sdk install java 17-tem 2>&1 | grep -q "installed"; then
             sleep 2
-            if sdk list java | grep -q "17.0.*installed"; then
+            if is_java_installed "17.0"; then
                 print_success "Java 17 installed"
             else
                 print_warning "Failed to install Java 17, continuing..."
@@ -185,7 +222,7 @@ main() {
     fi
     
     # Java LTS (21 or 17, prefer 21)
-    if sdk list java | grep -q "21.0.*installed" || [[ -d "$HOME/.sdkman/candidates/java/21.0"* ]]; then
+    if is_java_installed "21.0"; then
         print_info "Java 21 (LTS) already installed"
     else
         print_info "Installing Java 21 (LTS)..."
@@ -194,7 +231,7 @@ main() {
             print_success "Java 21 LTS installed"
         elif printf "n\n" | sdk install java 21-tem 2>&1 | grep -q "installed"; then
             sleep 2
-            if sdk list java | grep -q "21.0.*installed"; then
+            if is_java_installed "21.0"; then
                 print_success "Java 21 LTS installed"
             else
                 print_warning "Failed to install Java 21, continuing..."
