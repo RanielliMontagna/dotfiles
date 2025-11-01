@@ -192,6 +192,17 @@ main() {
         print_info "Sudo will be renewed automatically during installation"
     fi
     
+    # Centralized apt-get update (optimization)
+    # Update package lists once at the beginning for all scripts
+    if command -v ensure_apt_updated &> /dev/null || type ensure_apt_updated &> /dev/null 2>&1; then
+        print_info "Updating package lists (once for all scripts)..."
+        ensure_apt_updated
+    else
+        # Fallback if common.sh not loaded
+        print_info "Updating package lists..."
+        sudo apt-get update -qq
+    fi
+    
     # Make sure all scripts are executable
     chmod +x "$SCRIPTS_DIR"/*.sh 2>/dev/null || true
     

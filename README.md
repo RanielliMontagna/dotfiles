@@ -24,6 +24,9 @@ Automated setup for a fresh **Zorin OS** machine. Run **one command** after inst
 - ⚡ **Always updated** - Uses LTS and latest stable versions from official sources
 - 🛡️ **Robust downloads** - Timeouts, retries, and connectivity checks prevent hanging
 - 🔐 **Automatic sudo renewal** - No password prompts during long installations
+- ⚡ **APT optimization** - Centralized package list updates reduce installation time
+- 🏗️ **Architecture validation** - Ensures downloads match system architecture
+- 🔒 **Checksum validation** - Optional file integrity verification
 
 ---
 
@@ -131,7 +134,7 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 
 ## 🚀 Recent Improvements
 
-The project has been enhanced with **high and medium priority improvements** for better reliability:
+The project has been enhanced with **high, medium, and low priority improvements** for better reliability and performance:
 
 ### High Priority ✅
 
@@ -140,13 +143,19 @@ The project has been enhanced with **high and medium priority improvements** for
 - ✅ **Automatic sudo renewal** - Keeps sudo credentials active during long installations
 - ✅ **Shared functions** - New `scripts/common.sh` provides reusable functions for all scripts, reducing code duplication
 
-### Medium Priority ✅ (NEW)
+### Medium Priority ✅
 
 - ✅ **Download cache** - Files are cached in `~/.cache/dotfiles/` to avoid re-downloading on script re-execution
 - ✅ **Disk space verification** - Checks available space before installing large packages (Java SDKs ~2GB, Android Studio ~3GB)
 - ✅ **Progress indicators** - Shows progress during long installations (e.g., `[2/4] Installing Java 11...`, `[3/5] Installing Android SDK component...`)
 
-These improvements make the installation process more robust, faster on re-runs, and prevent common issues like hanging downloads, expired sudo passwords, or insufficient disk space failures.
+### Low Priority ✅ (NEW)
+
+- ✅ **APT optimization** - `apt-get update` now runs only once at the beginning, significantly reducing total installation time (from ~12 updates to 1)
+- ✅ **Architecture validation** - Verifies system architecture (amd64, arm64) before downloads to ensure compatibility
+- ✅ **Checksum validation** - Optional SHA256 checksum verification for downloaded files when checksums are available
+
+These improvements make the installation process more robust, faster on re-runs, and prevent common issues like hanging downloads, expired sudo passwords, or insufficient disk space failures. The APT optimization alone can save several minutes during installation by avoiding redundant package list updates.
 
 ---
 

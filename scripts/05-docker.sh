@@ -59,8 +59,12 @@ main() {
     print_info "Removing old Docker versions (if any)..."
     sudo apt-get remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
     
-    # Update package index
-    sudo apt-get update
+    # Update package index (use centralized function if available)
+    if command -v ensure_apt_updated &> /dev/null; then
+        ensure_apt_updated
+    else
+        sudo apt-get update
+    fi
     
     # Install dependencies
     print_info "Installing dependencies..."
@@ -82,8 +86,12 @@ main() {
       "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
       $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
     
-    # Update package index again
-    sudo apt-get update
+    # Update package index again (force update needed after adding repository)
+    if command -v ensure_apt_updated &> /dev/null; then
+        ensure_apt_updated true
+    else
+        sudo apt-get update
+    fi
     
     # Install Docker Engine
     print_info "Installing Docker Engine..."

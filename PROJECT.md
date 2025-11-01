@@ -87,6 +87,22 @@ dotfiles/
 
   - `keep_sudo_alive()` - Runs in background to automatically renew sudo credentials during long installations
 
+- **Architecture Validation** (new):
+
+  - `get_architecture()` - Get system architecture (amd64, arm64, etc.)
+  - `is_architecture_supported()` - Check if current architecture matches requirement
+  - `get_arch_download_path()` - Get architecture-specific download path
+
+- **Checksum Validation** (new):
+
+  - `verify_checksum()` - Verify SHA256 checksum of downloaded file
+  - `safe_download_with_checksum()` - Download and verify checksum in one step
+
+- **APT Management** (new):
+
+  - `ensure_apt_updated()` - Run apt-get update only once per session (optimization)
+  - Tracks `APT_UPDATE_DONE` to prevent redundant updates
+
 - **Utility Functions**:
   - `is_command_available()` - Check if a command exists
   - `is_package_installed()` - Check if a dpkg package is installed
@@ -108,6 +124,9 @@ fi
 - ✅ **Download cache** prevents re-downloading files on script re-execution
 - ✅ **Disk space checks** prevent installation failures due to insufficient space
 - ✅ **Progress indicators** provide feedback during long operations
+- ✅ **Architecture validation** ensures downloads match system architecture
+- ✅ **Checksum validation** (optional) verifies file integrity when checksums are available
+- ✅ **APT optimization** - `apt-get update` runs only once per session, significantly reducing installation time
 - ✅ No hanging downloads on network failures
 - ✅ Automatic sudo renewal prevents password prompts during long installations
 - ✅ Reduced code duplication across scripts
@@ -126,6 +145,7 @@ fi
 - Checks OS compatibility (Zorin/Ubuntu)
 - **Checks internet connectivity** before proceeding (new)
 - **Renews sudo automatically** during long installations (new)
+- **Centralized apt-get update** - Updates package lists once at the beginning (optimization)
 - Executes scripts 01-08 always
 - Prompts user for script 09 (Extras)
 - Makes all scripts executable
@@ -275,6 +295,7 @@ fi
 - Uses `safe_curl_download_with_cache()` from `common.sh` for reliable downloads with automatic retries and caching
 - Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
 - **Fixed download URLs**: Now uses official API (`api2.cursor.sh`) and direct links (`downloads.cursor.com`) instead of obsolete `downloader.cursor.sh` domain
+- **Architecture validation** before download to ensure compatibility
 - Supports both amd64 and arm64 architectures
 
 ---
@@ -377,6 +398,7 @@ fi
 
 - All downloads use shared functions from `common.sh` with timeouts (300-600s), connection timeouts (30s), and automatic retries (3 attempts)
 - Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
+- Uses `ensure_apt_updated()` to avoid redundant apt-get update calls
 - **Disk space check** before Android Studio installation (requires ~3GB)
 - **Progress indicators** during Android SDK component installation
 
@@ -440,6 +462,8 @@ fi
 
 - Downloads now use shared functions from `common.sh` with timeouts (300s), connection timeouts (30s), and automatic retries (3 attempts)
 - Downloads are cached in `~/.cache/dotfiles/` for faster re-execution
+- Uses `ensure_apt_updated()` to avoid redundant apt-get update calls
+- **Architecture validation** for Chrome installation
 
 ---
 
@@ -605,8 +629,27 @@ fi
     - Tests multiple DNS servers for reliability
 
 11. **Sudo Management**:
+
     - Automatic renewal of sudo credentials during long installations
     - Prevents password prompts mid-installation
+
+12. **APT Optimization**:
+
+    - Centralized `apt-get update` runs once at the beginning
+    - Scripts use `ensure_apt_updated()` to avoid redundant updates
+    - Forces update only when repositories are added (force flag)
+    - **Significantly reduces total installation time**
+
+13. **Architecture Validation**:
+
+    - Verifies architecture before downloads (amd64, arm64)
+    - Clear error messages for unsupported architectures
+    - Automatic architecture detection and path selection
+
+14. **Checksum Validation**:
+    - Optional SHA256 checksum verification for downloaded files
+    - Ensures file integrity when checksums are available
+    - Gracefully skips validation if checksum not provided
 
 ---
 

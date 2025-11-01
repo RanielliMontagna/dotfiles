@@ -451,3 +451,157 @@ is_file() {
     [[ -f "$1" ]]
 }
 
+###############################################################################
+# Architecture Validation
+###############################################################################
+
+# Get system architecture
+get_architecture() {
+    dpkg --print-architecture 2>/dev/null || uname -m
+}
+
+# Check if architecture is supported
+# Usage: is_architecture_supported [amd64|arm64|all]
+# Returns 0 if supported, 1 otherwise
+is_architecture_supported() {
+    local required_arch="${1:-amd64}"
+    local current_arch
+    current_arch=$(get_architecture)
+    
+    case "$required_arch" in
+        all|any)
+            return 0
+            ;;
+        amd64|x86_64|x64)
+            [[ "$current_arch" == "amd64" ]] || [[ "$current_arch" == "x86_64" ]]
+            ;;
+        arm64|aarch64|arm)
+            [[ "$current_arch" == "arm64" ]] || [[ "$current_arch" == "aarch64" ]]
+            ;;
+        *)
+            print_warning "Unknown architecture requirement: $required_arch"
+            return 1
+            ;;
+    esac
+}
+
+# Get architecture-specific download path
+# Usage: get_arch_download_path <base_url> <amd64_path> [arm64_path]
+# Returns the appropriate path based on current architecture
+get_arch_download_path() {
+    local base_url="$1"
+    local amd64_path="$2"
+    local arm64_path="${3:-$amd64_path}"
+    local current_arch
+    current_arch=$(get_architecture)
+    
+    if [[ "$current_arch" == "amd64" ]] || [[ "$current_arch" == "x86_64" ]]; then
+        echo "${base_url}${amd64_path}"
+    elif [[ "$current_arch" == "arm64" ]] || [[ "$current_arch" == "aarch64" ]]; then
+        echo "${base_url}${arm64_path}"
+    else
+        print_error "Unsupported architecture: $current_arch"
+        return 1
+    fi
+}
+
+###############################################################################
+# Checksum Validation
+###############################################################################
+
+# Verify file checksum (SHA256)
+# Usage: verify_checksum <file> <expected_sha256>
+# Returns 0 if match, 1 otherwise
+verify_checksum() {
+    local file="$1"
+    local expected_sha256="$2"
+    
+    if [[ ! -f "$file" ]]; then
+        print_error "File not found: $file"
+        return 1
+    fi
+    
+    if [[ -z "$expected_sha256" ]]; then
+        print_warning "No checksum provided for validation"
+        return 0  # Skip validation if no checksum
+    fi
+    
+    local actual_sha256
+    if command -v sha256sum &> /dev/null; then
+        actual_sha256=$(sha256sum "$file" | cut -d' ' -f1)
+    elif command -v shasum &> /dev/null; then
+        actual_sha256=$(shasum -a 256 "$file" | cut -d' ' -f1)
+    else
+        print_warning "sha256sum not available, skipping checksum validation"
+        return 0  # Skip validation if tool not available
+    fi
+    
+    if [[ "$actual_sha256" == "$expected_sha256" ]]; then
+        print_success "Checksum verified: $file"
+        return 0
+    else
+        print_error "Checksum mismatch for: $file"
+        print_info "Expected: $expected_sha256"
+        print_info "Actual:   $actual_sha256"
+        return 1
+    fi
+}
+
+# Download and verify checksum
+# Usage: safe_download_with_checksum <url> <output_file> <expected_sha256> [max_retries] [timeout]
+safe_download_with_checksum() {
+    local url="$1"
+    local output_file="$2"
+    local expected_sha256="$3"
+    local max_retries="${4:-3}"
+    local timeout="${5:-300}"
+    local connect_timeout="${6:-30}"
+    
+    # Download file
+    if safe_curl_download_with_cache "$url" "$output_file" "$max_retries" "$timeout" "$connect_timeout"; then
+        # Verify checksum if provided
+        if [[ -n "$expected_sha256" ]]; then
+            if verify_checksum "$output_file" "$expected_sha256"; then
+                return 0
+            else
+                print_warning "Checksum verification failed, but file downloaded"
+                return 1
+            fi
+        fi
+        return 0
+    fi
+    
+    return 1
+}
+
+###############################################################################
+# APT Management
+###############################################################################
+
+# Track if apt-get update has been run in this session
+APT_UPDATE_DONE=false
+export APT_UPDATE_DONE
+
+# Run apt-get update (only once per session)
+# Usage: ensure_apt_updated [force]
+# If force is set to "true", forces update even if already done
+ensure_apt_updated() {
+    local force="${1:-false}"
+    
+    if [[ "$APT_UPDATE_DONE" == "true" ]] && [[ "$force" != "true" ]]; then
+        print_info "Package list already updated in this session"
+        return 0
+    fi
+    
+    print_info "Updating package lists..."
+    if sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq; then
+        APT_UPDATE_DONE=true
+        export APT_UPDATE_DONE
+        print_success "Package lists updated"
+        return 0
+    else
+        print_error "Failed to update package lists"
+        return 1
+    fi
+}
+

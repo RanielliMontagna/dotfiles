@@ -13,22 +13,28 @@
 
 set -e
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-print_info() {
-    echo -e "${BLUE}[essentials]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-print_error() {
-    echo -e "\033[0;31m✗\033[0m $1"
-}
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    # Fallback if common.sh not found
+    GREEN='\033[0;32m'
+    BLUE='\033[0;34m'
+    NC='\033[0m'
+    
+    print_info() {
+        echo -e "${BLUE}[essentials]${NC} $1"
+    }
+    
+    print_success() {
+        echo -e "${GREEN}✓${NC} $1"
+    }
+    
+    print_error() {
+        echo -e "\033[0;31m✗\033[0m $1"
+    }
+fi
 
 # Check if package is installed
 is_installed() {
@@ -64,8 +70,14 @@ main() {
         exit 1
     fi
     
-    print_info "Updating package lists..."
-    sudo apt-get update
+    # Use centralized apt update (optimization)
+    if command -v ensure_apt_updated &> /dev/null; then
+        ensure_apt_updated
+    else
+        # Fallback if common.sh not loaded
+        print_info "Updating package lists..."
+        sudo apt-get update
+    fi
     
     print_info "Upgrading existing packages..."
     sudo apt-get upgrade -y

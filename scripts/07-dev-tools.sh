@@ -62,7 +62,11 @@ main() {
             print_warning "Snap not available, installing Android Studio manually..."
             
             # Install dependencies
-            sudo apt-get update
+            if command -v ensure_apt_updated &> /dev/null; then
+                ensure_apt_updated
+            else
+                sudo apt-get update
+            fi
             sudo apt-get install -y libc6:i386 libncurses5:i386 libstdc++6:i386 lib32z1 libbz2-1.0:i386
             
             # Download Android Studio

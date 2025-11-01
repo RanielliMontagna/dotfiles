@@ -48,7 +48,12 @@ main() {
         sudo install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
         sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
         rm -f packages.microsoft.gpg
-        sudo apt update
+        # Update apt after adding repository (force update needed)
+        if command -v ensure_apt_updated &> /dev/null; then
+            ensure_apt_updated true
+        else
+            sudo apt update
+        fi
         sudo apt install -y code
         print_success "VS Code installed"
     fi
@@ -90,8 +95,21 @@ main() {
     else
         print_info "Installing Cursor..."
         
-        # Get architecture
-        ARCH=$(dpkg --print-architecture)
+        # Get architecture and validate
+        if command -v get_architecture &> /dev/null; then
+            ARCH=$(get_architecture)
+        else
+            ARCH=$(dpkg --print-architecture 2>/dev/null || uname -m)
+        fi
+        
+        # Validate architecture is supported
+        if ! is_architecture_supported "amd64" && ! is_architecture_supported "arm64"; then
+            print_error "Unsupported architecture: $ARCH"
+            print_info "Cursor supports amd64 and arm64 architectures"
+            print_info "Please download Cursor manually from https://cursor.com/download"
+            return 1
+        fi
+        
         CURSOR_TEMP="/tmp/cursor.deb"
         
         print_info "Downloading Cursor for ${ARCH}..."

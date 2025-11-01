@@ -57,16 +57,23 @@ main() {
     else
         print_info "Installing Google Chrome..."
         
-        # Download and install Chrome .deb
-        CHROME_DEB="/tmp/google-chrome.deb"
-        safe_curl_download_with_cache "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" "$CHROME_DEB" 3 300 30
-        
-        if [[ -f "$CHROME_DEB" ]]; then
-            sudo dpkg -i "$CHROME_DEB" || sudo apt-get install -f -y
-            rm -f "$CHROME_DEB"
-            print_success "Google Chrome installed"
+        # Validate architecture (Chrome supports amd64 and arm64)
+        if ! is_architecture_supported "amd64" && ! is_architecture_supported "arm64"; then
+            print_warning "Chrome may not be available for architecture: $(get_architecture)"
+            print_info "Skipping Chrome installation"
         else
-            print_warning "Could not download Chrome. Please install manually from https://www.google.com/chrome/"
+            # Download and install Chrome .deb
+            CHROME_DEB="/tmp/google-chrome.deb"
+            # Chrome URL (Google redirects to correct architecture if needed)
+            safe_curl_download_with_cache "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" "$CHROME_DEB" 3 300 30
+            
+            if [[ -f "$CHROME_DEB" ]]; then
+                sudo dpkg -i "$CHROME_DEB" || sudo apt-get install -f -y
+                rm -f "$CHROME_DEB"
+                print_success "Google Chrome installed"
+            else
+                print_warning "Could not download Chrome. Please install manually from https://www.google.com/chrome/"
+            fi
         fi
     fi
     
@@ -85,8 +92,12 @@ main() {
         # Add Brave repository
         echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list
         
-        # Update and install
-        sudo apt-get update
+        # Update and install (force update needed after adding repository)
+        if command -v ensure_apt_updated &> /dev/null; then
+            ensure_apt_updated true
+        else
+            sudo apt-get update
+        fi
         sudo apt-get install -y brave-browser
         print_success "Brave Browser installed"
     fi
@@ -96,7 +107,11 @@ main() {
         print_info "Firefox already installed ($(firefox --version 2>/dev/null || echo 'installed'))"
     else
         print_info "Installing Firefox..."
-        sudo apt-get update
+        if command -v ensure_apt_updated &> /dev/null; then
+            ensure_apt_updated
+        else
+            sudo apt-get update
+        fi
         sudo apt-get install -y firefox
         print_success "Firefox installed"
     fi
@@ -113,7 +128,11 @@ main() {
             print_success "Steam installed via snap"
         else
             print_info "Installing Steam via apt..."
-            sudo apt-get update
+            if command -v ensure_apt_updated &> /dev/null; then
+                ensure_apt_updated
+            else
+                sudo apt-get update
+            fi
             sudo apt-get install -y steam-launcher
             print_success "Steam installed"
         fi
@@ -134,7 +153,12 @@ main() {
             # Alternative: Add Spotify repository
             curl -sS https://download.spotify.com/debian/pubkey_7A3A762FAFD4A51F.gpg | sudo gpg --dearmor --yes -o /usr/share/keyrings/spotify.gpg
             echo "deb [signed-by=/usr/share/keyrings/spotify.gpg] http://repository.spotify.com stable non-free" | sudo tee /etc/apt/sources.list.d/spotify.list
-            sudo apt-get update
+            # Force update after adding repository
+            if command -v ensure_apt_updated &> /dev/null; then
+                ensure_apt_updated true
+            else
+                sudo apt-get update
+            fi
             sudo apt-get install -y spotify-client
             print_success "Spotify installed"
         fi
@@ -177,7 +201,11 @@ main() {
             print_success "OBS Studio installed via snap"
         else
             print_warning "Snap not available, installing via apt..."
-            sudo apt-get update
+            if command -v ensure_apt_updated &> /dev/null; then
+                ensure_apt_updated
+            else
+                sudo apt-get update
+            fi
             sudo apt-get install -y obs-studio
             print_success "OBS Studio installed"
         fi
@@ -190,7 +218,11 @@ main() {
         print_info "Installing NordVPN..."
         
         # Install dependencies
-        sudo apt-get update
+        if command -v ensure_apt_updated &> /dev/null; then
+            ensure_apt_updated
+        else
+            sudo apt-get update
+        fi
         sudo apt-get install -y curl
         
         # Download and run NordVPN installer
