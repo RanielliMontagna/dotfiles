@@ -648,11 +648,38 @@ enable_extension() {
         return 1
     fi
     
+    # Check shell version compatibility
+    local metadata_file="$extensions_dir/$extension_uuid/metadata.json"
+    if [[ -f "$metadata_file" ]]; then
+        local gnome_version
+        gnome_version=$(gnome-shell --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "")
+        if [[ -n "$gnome_version" ]]; then
+            local major_version="${gnome_version%%.*}"
+            # Check if metadata.json has compatible shell-version
+            if ! grep -q "\"$major_version\"" "$metadata_file" 2>/dev/null && ! grep -q "\"${gnome_version}\"" "$metadata_file" 2>/dev/null; then
+                print_warning "Extension $extension_uuid may not be compatible with GNOME Shell $gnome_version"
+                print_info "Checking for compatible versions..."
+            fi
+        fi
+    fi
+    
     # Try to enable via gnome-extensions command first
     if command -v gnome-extensions &> /dev/null; then
+        # First disable and re-enable to ensure clean state
+        gnome-extensions disable "$extension_uuid" 2>/dev/null || true
+        sleep 1
+        
         if gnome-extensions enable "$extension_uuid" 2>/dev/null; then
-            print_success "Extension $extension_uuid enabled"
-            return 0
+            # Verify it's actually enabled and active
+            sleep 2
+            local state
+            state=$(gnome-extensions info "$extension_uuid" 2>/dev/null | grep "State:" | grep -o "ACTIVE\|ENABLED\|DISABLED" | head -1 || echo "")
+            if [[ "$state" == "ACTIVE" ]] || [[ "$state" == "ENABLED" ]]; then
+                print_success "Extension $extension_uuid enabled and active"
+                return 0
+            else
+                print_warning "Extension $extension_uuid enabled but state is: $state"
+            fi
         fi
     fi
     
@@ -988,18 +1015,72 @@ configure_system_extensions() {
             fi
             
             if enable_extension "$extension_uuid"; then
-                print_success "$extension_name installed and enabled ✓"
+                # Force reload GNOME Shell to activate extension
+                sleep 2
+                reload_gnome_shell || true
+                
+                # Wait and verify extension is active
+                sleep 3
+                local final_state
+                if command -v gnome-extensions &> /dev/null; then
+                    final_state=$(gnome-extensions info "$extension_uuid" 2>/dev/null | grep "State:" | grep -o "ACTIVE\|ENABLED\|DISABLED" | head -1 || echo "")
+                    if [[ "$final_state" == "ACTIVE" ]]; then
+                        print_success "$extension_name installed and enabled ✓ (ACTIVE)"
+                    elif [[ "$final_state" == "ENABLED" ]]; then
+                        print_success "$extension_name installed and enabled ✓ (may need restart)"
+                    else
+                        print_warning "$extension_name enabled but not active (state: $final_state)"
+                        print_info "You may need to restart GNOME Shell: Press Alt+F2, type 'r' and Enter"
+                    fi
+                else
+                    print_success "$extension_name installed and enabled ✓"
+                fi
                 return 0
             else
                 print_warning "$extension_name installed but could not be enabled automatically"
                 print_info "Trying alternative enable method..."
+                
+                # Try multiple methods to enable
+                local enable_success=false
+                
+                # Method 1: Force disable then enable via gnome-extensions
                 if command -v gnome-extensions &> /dev/null; then
+                    gnome-extensions disable "$extension_uuid" 2>/dev/null || true
+                    sleep 1
                     if gnome-extensions enable "$extension_uuid" 2>/dev/null; then
-                        print_success "$extension_name enabled via gnome-extensions"
-                        return 0
+                        enable_success=true
                     fi
                 fi
+                
+                # Method 2: Use dconf directly with proper formatting
+                if [[ "$enable_success" == "false" ]] && command -v dconf &> /dev/null; then
+                    local current_list
+                    current_list=$(dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || echo "[]")
+                    if ! echo "$current_list" | grep -q "$extension_uuid"; then
+                        # Add to list
+                        local clean_list
+                        clean_list=$(echo "$current_list" | sed "s/^@as //; s/^\[//; s/\]$//; s/'//g" | tr -d ' ')
+                        if [[ -z "$clean_list" ]] || [[ "$clean_list" == "" ]]; then
+                            dconf write /org/gnome/shell/enabled-extensions "['$extension_uuid']" 2>/dev/null && enable_success=true
+                        else
+                            # Build properly formatted list
+                            local new_list="@as ['${clean_list//,/\', \'}, '$extension_uuid']"
+                            dconf write /org/gnome/shell/enabled-extensions "$new_list" 2>/dev/null && enable_success=true
+                        fi
+                    else
+                        enable_success=true  # Already in list
+                    fi
+                fi
+                
+                if [[ "$enable_success" == "true" ]]; then
+                    sleep 2
+                    reload_gnome_shell || true
+                    print_success "$extension_name enabled via alternative method"
+                    return 0
+                fi
+                
                 print_info "Please enable manually: Open Extension Manager and toggle $extension_name ON"
+                print_info "Or run: gnome-extensions enable $extension_uuid"
                 return 1
             fi
         else
@@ -1012,9 +1093,23 @@ configure_system_extensions() {
         fi
     }
     
+    # Define extensions directory
+    local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+    
     # Install Clipboard Indicator (clipboard icon in top bar)
     if install_and_enable_extension "Clipboard Indicator" "779" "clipboard-indicator@tudmotu.com"; then
         print_info "Clipboard Indicator is now active - clipboard icon in top bar"
+    fi
+    
+    # Force re-enable Clipboard Indicator if it's installed but not working
+    if [[ -d "$extensions_dir/clipboard-indicator@tudmotu.com" ]]; then
+        print_info "Ensuring Clipboard Indicator is properly activated..."
+        if command -v gnome-extensions &> /dev/null; then
+            gnome-extensions disable "clipboard-indicator@tudmotu.com" 2>/dev/null || true
+            sleep 1
+            gnome-extensions enable "clipboard-indicator@tudmotu.com" 2>/dev/null || true
+            sleep 1
+        fi
     fi
     
     # Install Blur My Shell (adds blur effects to GNOME Shell)
@@ -1030,6 +1125,17 @@ configure_system_extensions() {
     # Install Dash to Panel (combines dash and top panel into single panel)
     if install_and_enable_extension "Dash to Panel" "1160" "dash-to-panel@jderose9.github.com"; then
         print_info "Dash to Panel is now active - dash and top panel combined"
+    fi
+    
+    # Force re-enable Dash to Panel if it's installed but not working
+    if [[ -d "$extensions_dir/dash-to-panel@jderose9.github.com" ]]; then
+        print_info "Ensuring Dash to Panel is properly activated..."
+        if command -v gnome-extensions &> /dev/null; then
+            gnome-extensions disable "dash-to-panel@jderose9.github.com" 2>/dev/null || true
+            sleep 1
+            gnome-extensions enable "dash-to-panel@jderose9.github.com" 2>/dev/null || true
+            sleep 1
+        fi
     fi
     
     # Install Vitals (system monitoring - temperature, CPU, memory, network, battery)
