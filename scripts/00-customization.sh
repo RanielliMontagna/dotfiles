@@ -707,19 +707,102 @@ configure_system_extensions() {
         sudo apt-get install -y unzip 2>/dev/null || true
     fi
     
-    # Function to get latest extension download URL from extensions.gnome.org
+    # Function to get extension download URL from extensions.gnome.org API
+    # Uses multiple parsing methods for compatibility
     get_extension_download_url() {
         local extension_id="$1"
         local gnome_version="$2"
+        local extension_uuid="$3"
         
-        # Try to get download URL from extensions.gnome.org API
+        # Method 1: Use the official API endpoint
         local api_url="https://extensions.gnome.org/extension-info/?pk=${extension_id}&shell_version=${gnome_version}"
-        local download_url
-        download_url=$(curl -s "$api_url" 2>/dev/null | grep -o '"download_url":"[^"]*' | cut -d'"' -f4 || echo "")
+        local api_response
+        api_response=$(curl -sLf --max-time 10 "$api_url" 2>/dev/null || echo "")
         
-        if [[ -n "$download_url" ]] && [[ "$download_url" != "null" ]]; then
-            echo "https://extensions.gnome.org${download_url}"
-            return 0
+        if [[ -n "$api_response" ]]; then
+            local download_url=""
+            
+            # Try sed-based parsing (more compatible than grep -P)
+            download_url=$(echo "$api_response" | sed -n 's/.*"download_url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' 2>/dev/null || echo "")
+            
+            # If that failed, try with different pattern
+            if [[ -z "$download_url" ]]; then
+                download_url=$(echo "$api_response" | sed -n 's/.*download_url":"\([^"]*\)".*/\1/p' 2>/dev/null || echo "")
+            fi
+            
+            # If still empty, try grep (non-Perl for compatibility)
+            if [[ -z "$download_url" ]]; then
+                download_url=$(echo "$api_response" | grep -o '"download_url"[[:space:]]*:[[:space:]]*"[^"]*' | sed 's/.*"download_url"[[:space:]]*:[[:space:]]*"\([^"]*\)/\1/' 2>/dev/null || echo "")
+            fi
+            
+            if [[ -n "$download_url" ]] && [[ "$download_url" != "null" ]] && [[ "$download_url" != "" ]]; then
+                # The API returns relative URLs like /download-extension/{uuid}.shell-extension.zip?version_tag={tag}
+                # We need to prepend the base URL
+                if [[ "$download_url" == /* ]]; then
+                    echo "https://extensions.gnome.org${download_url}"
+                elif [[ "$download_url" == http* ]]; then
+                    # Already a full URL
+                    echo "$download_url"
+                else
+                    # Relative URL without leading slash
+                    echo "https://extensions.gnome.org/${download_url}"
+                fi
+                return 0
+            fi
+        fi
+        
+        # Method 2: Try with just major version
+        local major_only="${gnome_version%%.*}"
+        if [[ "$major_only" != "$gnome_version" ]]; then
+            api_url="https://extensions.gnome.org/extension-info/?pk=${extension_id}&shell_version=${major_only}.0"
+            api_response=$(curl -sLf --max-time 10 "$api_url" 2>/dev/null || echo "")
+            
+            if [[ -n "$api_response" ]]; then
+                local download_url
+                download_url=$(echo "$api_response" | sed -n 's/.*"download_url"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' 2>/dev/null || echo "")
+                
+                if [[ -z "$download_url" ]]; then
+                    download_url=$(echo "$api_response" | sed -n 's/.*download_url":"\([^"]*\)".*/\1/p' 2>/dev/null || echo "")
+                fi
+                
+                if [[ -n "$download_url" ]] && [[ "$download_url" != "null" ]] && [[ "$download_url" != "" ]]; then
+                    if [[ "$download_url" == /* ]]; then
+                        echo "https://extensions.gnome.org${download_url}"
+                    elif [[ "$download_url" == http* ]]; then
+                        echo "$download_url"
+                    else
+                        echo "https://extensions.gnome.org/${download_url}"
+                    fi
+                    return 0
+                fi
+            fi
+        fi
+        
+        return 1
+    }
+    
+    # Function to get extension version number from API
+    get_extension_version_number() {
+        local extension_id="$1"
+        local gnome_version="$2"
+        
+        local api_url="https://extensions.gnome.org/extension-info/?pk=${extension_id}&shell_version=${gnome_version}"
+        local api_response
+        api_response=$(curl -sLf --max-time 10 "$api_url" 2>/dev/null || echo "")
+        
+        if [[ -n "$api_response" ]]; then
+            # Look for version field - try multiple patterns
+            local version
+            version=$(echo "$api_response" | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' 2>/dev/null || echo "")
+            
+            if [[ -z "$version" ]]; then
+                version=$(echo "$api_response" | grep -o '"version"[[:space:]]*:[[:space:]]*[0-9]*' | grep -o '[0-9]*' | head -1 2>/dev/null || echo "")
+            fi
+            
+            if [[ -n "$version" ]] && [[ "$version" =~ ^[0-9]+$ ]]; then
+                echo "$version"
+                return 0
+            fi
         fi
         
         return 1
@@ -823,30 +906,69 @@ configure_system_extensions() {
             print_info "Installing $extension_name from extensions.gnome.org..."
             local extension_url=""
             
-            # Try to get download URL from API
-            print_info "Fetching compatible version from extensions.gnome.org..."
-            extension_url=$(get_extension_download_url "$extension_id" "$gnome_version" 2>/dev/null || echo "")
+            # Try to get download URL from API with full GNOME version
+            print_info "Fetching download URL from extensions.gnome.org API..."
+            extension_url=$(get_extension_download_url "$extension_id" "$gnome_version" "$extension_uuid" 2>/dev/null || echo "")
             
-            # If API failed, try with major version only
+            # If API failed, try with major.minor version (e.g., 46.0)
             if [[ -z "$extension_url" ]] || [[ "$extension_url" == "null" ]]; then
-                print_info "Trying with major version..."
-                extension_url=$(get_extension_download_url "$extension_id" "${major_version}.0" 2>/dev/null || echo "")
+                print_info "Trying API with major version..."
+                extension_url=$(get_extension_download_url "$extension_id" "${major_version}.0" "$extension_uuid" 2>/dev/null || echo "")
             fi
             
-            # Multiple fallback URLs for different versions
+            # If still no URL, try to get version number and construct URL directly
             if [[ -z "$extension_url" ]] || [[ "$extension_url" == "null" ]]; then
-                print_info "Using fallback URLs..."
-                # Try multiple common version numbers (most recent first)
-                local fallback_versions=("50" "49" "48" "47" "46" "45" "44" "43" "42" "41" "40")
-                for version in "${fallback_versions[@]}"; do
-                    local test_url="https://extensions.gnome.org/extension-data/${extension_uuid}.v${version}.shell-extension.zip"
-                    print_info "Trying version $version..."
-                    if curl -sLf --head --max-time 10 "$test_url" >/dev/null 2>&1; then
-                        extension_url="$test_url"
-                        print_success "Found compatible version: $version"
-                        break
-                    fi
-                done
+                print_info "Trying to get extension version from API..."
+                local ext_version
+                ext_version=$(get_extension_version_number "$extension_id" "$gnome_version" 2>/dev/null || echo "")
+                
+                if [[ -n "$ext_version" ]]; then
+                    extension_url="https://extensions.gnome.org/extension-data/${extension_uuid}.v${ext_version}.shell-extension.zip"
+                    print_info "Constructed URL with version ${ext_version}"
+                fi
+            fi
+            
+            # Final fallback: Try common version numbers by testing URLs directly
+            if [[ -z "$extension_url" ]] || [[ "$extension_url" == "null" ]]; then
+                print_info "Trying fallback version detection..."
+                # Start from current major version and go backwards
+                local fallback_majors
+                if [[ "$major_version" -ge 40 ]]; then
+                    # Test versions from current major down to 40
+                    local start_version=$((major_version * 10))
+                    local end_version=$((40 * 10))
+                    for ((v=start_version; v>=end_version; v-=10)); do
+                        local test_version=$((v / 10))
+                        # Try multiple patch versions for each major
+                        for patch in 99 50 20 10 5 1 0; do
+                            local test_url="https://extensions.gnome.org/extension-data/${extension_uuid}.v${test_version}${patch}.shell-extension.zip"
+                            print_info "Testing version ${test_version}.${patch}..."
+                            local http_code
+                            http_code=$(curl -sLf --head --max-time 5 -w "%{http_code}" -o /dev/null "$test_url" 2>/dev/null || echo "000")
+                            if [[ "$http_code" == "200" ]]; then
+                                extension_url="$test_url"
+                                print_success "Found working URL with version ${test_version}.${patch}"
+                                break 2
+                            fi
+                        done
+                    done
+                fi
+                
+                # Last resort: try simple numeric versions (47, 46, 45, etc.)
+                if [[ -z "$extension_url" ]] || [[ "$extension_url" == "null" ]]; then
+                    local simple_versions=("50" "49" "48" "47" "46" "45" "44" "43" "42" "41" "40")
+                    for version in "${simple_versions[@]}"; do
+                        local test_url="https://extensions.gnome.org/extension-data/${extension_uuid}.v${version}.shell-extension.zip"
+                        print_info "Testing simple version ${version}..."
+                        local http_code
+                        http_code=$(curl -sLf --head --max-time 5 -w "%{http_code}" -o /dev/null "$test_url" 2>/dev/null || echo "000")
+                        if [[ "$http_code" == "200" ]]; then
+                            extension_url="$test_url"
+                            print_success "Found working URL with version ${version}"
+                            break
+                        fi
+                    done
+                fi
             fi
             
             if [[ -n "$extension_url" ]] && [[ "$extension_url" != "null" ]]; then
