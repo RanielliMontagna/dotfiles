@@ -12,6 +12,7 @@
 # - Discord (chat and communication)
 # - OBS Studio (streaming and recording)
 # - NordVPN (VPN service)
+# - Bitwarden (password manager)
 #
 # This script is idempotent - safe to run multiple times
 ###############################################################################
@@ -206,6 +207,46 @@ main() {
             fi
         else
             print_warning "Could not install NordVPN automatically. Please install manually from https://nordvpn.com/download/linux/"
+        fi
+    fi
+    
+    # Install Bitwarden
+    if command -v bitwarden &> /dev/null || is_installed "bitwarden"; then
+        print_info "Bitwarden already installed"
+    else
+        print_info "Installing Bitwarden..."
+        
+        if command -v snap &> /dev/null; then
+            sudo snap install bitwarden
+            print_success "Bitwarden installed via snap"
+        else
+            print_warning "Snap not available, trying alternative method..."
+            
+            # Alternative: Download .deb from Bitwarden (get latest version from GitHub releases)
+            BITWARDEN_DEB="/tmp/bitwarden.deb"
+            
+            # Get latest release URL from GitHub API (looking for desktop Linux .deb)
+            if command -v jq &> /dev/null; then
+                LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/bitwarden/clients/releases/latest | jq -r '.assets[] | select(.name | contains("desktop") and contains(".deb")) | .browser_download_url' | head -1)
+            else
+                # Fallback: use grep if jq is not available
+                LATEST_RELEASE_URL=$(curl -s https://api.github.com/repos/bitwarden/clients/releases/latest | grep -o '"browser_download_url": "[^"]*desktop[^"]*\.deb"' | head -1 | cut -d'"' -f4)
+            fi
+            
+            if [[ -n "$LATEST_RELEASE_URL" ]] && [[ "$LATEST_RELEASE_URL" != "null" ]]; then
+                print_info "Downloading Bitwarden from GitHub releases..."
+                curl -L -o "$BITWARDEN_DEB" "$LATEST_RELEASE_URL"
+                
+                if [[ -f "$BITWARDEN_DEB" ]] && [[ -s "$BITWARDEN_DEB" ]]; then
+                    sudo dpkg -i "$BITWARDEN_DEB" || sudo apt-get install -f -y
+                    rm -f "$BITWARDEN_DEB"
+                    print_success "Bitwarden installed"
+                else
+                    print_warning "Could not download Bitwarden. Please install manually from https://bitwarden.com/download/"
+                fi
+            else
+                print_warning "Could not find Bitwarden download URL. Please install manually from https://bitwarden.com/download/"
+            fi
         fi
     fi
     

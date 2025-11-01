@@ -292,7 +292,7 @@ dotfiles/
 
 ### 08-applications.sh
 
-**Purpose**: Install browsers, games, media apps, and VPN (always installed).
+**Purpose**: Install browsers, games, media apps, VPN, and password manager (always installed).
 
 **Installs**:
 
@@ -320,6 +320,9 @@ dotfiles/
 - **NordVPN**: VPN service
   - Uses official NordVPN installer script
   - Automatically configures system
+- **Bitwarden**: Password manager
+  - Prefers snap installation (`snap install bitwarden`)
+  - Falls back to .deb download from Bitwarden website
 
 **Idempotency**:
 
@@ -337,6 +340,7 @@ dotfiles/
 - Discord: Snap store or official Discord download
 - OBS Studio: Snap store or Ubuntu repositories
 - NordVPN: Official NordVPN installer
+- Bitwarden: Snap store or official Bitwarden download
 
 **Note**: This script always runs (not optional) as these applications are essential for daily use.
 
