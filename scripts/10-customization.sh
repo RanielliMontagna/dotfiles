@@ -364,13 +364,69 @@ configure_wallpaper() {
         return 0
     fi
     
-    print_info "Wallpaper configuration..."
-    print_info "You can set a custom dark wallpaper manually from Settings > Appearance"
-    print_info "Or download a wallpaper and set it with:"
-    print_info "  gsettings set org.gnome.desktop.background picture-uri 'file:///path/to/wallpaper.jpg'"
+    print_info "Configuring wallpaper..."
     
-    # We won't download a wallpaper automatically, but we can set a preference for dark wallpapers
-    # The user can set their own wallpaper based on their preference
+    # Get dotfiles directory
+    local dotfiles_dir
+    dotfiles_dir="$(cd "$SCRIPT_DIR/.." && pwd)"
+    local wallpaper_dir="$dotfiles_dir/assets/wallpapers"
+    
+    # Check for background images (multiple formats and naming conventions)
+    local wallpaper_file=""
+    local wallpaper_extensions=("jpg" "jpeg" "png" "webp")
+    local wallpaper_names=("background" "wallpaper" "desktop")
+    
+    # Try to find wallpaper file
+    for name in "${wallpaper_names[@]}"; do
+        for ext in "${wallpaper_extensions[@]}"; do
+            # Try lowercase extension
+            if [[ -f "$wallpaper_dir/${name}.${ext}" ]]; then
+                wallpaper_file="$wallpaper_dir/${name}.${ext}"
+                break 2
+            fi
+            # Try uppercase extension
+            local ext_upper="${ext^^}"
+            if [[ -f "$wallpaper_dir/${name}.${ext_upper}" ]]; then
+                wallpaper_file="$wallpaper_dir/${name}.${ext_upper}"
+                break 2
+            fi
+        done
+    done
+    
+    # If found, copy to user's Pictures directory and set as wallpaper
+    if [[ -n "$wallpaper_file" ]] && [[ -f "$wallpaper_file" ]]; then
+        print_info "Found wallpaper: $(basename "$wallpaper_file")"
+        
+        # Create Pictures directory if it doesn't exist
+        local pictures_dir="$HOME/Pictures"
+        mkdir -p "$pictures_dir"
+        
+        # Copy wallpaper to Pictures directory
+        local wallpaper_dest="$pictures_dir/background.${wallpaper_file##*.}"
+        cp "$wallpaper_file" "$wallpaper_dest"
+        print_success "Wallpaper copied to: $wallpaper_dest"
+        
+        # Set as wallpaper (convert to file URI)
+        local wallpaper_uri="file://$(readlink -f "$wallpaper_dest" || echo "$wallpaper_dest")"
+        
+        # For GNOME, use gsettings
+        if command -v gsettings &> /dev/null; then
+            set_gnome_setting "org.gnome.desktop.background" "picture-uri" "'$wallpaper_uri'" || true
+            set_gnome_setting "org.gnome.desktop.background" "picture-uri-dark" "'$wallpaper_uri'" || true
+            # Set picture options (centered, scaled, spanned, etc.)
+            set_gnome_setting "org.gnome.desktop.background" "picture-options" "'zoom'" || true
+            print_success "Wallpaper configured successfully"
+        else
+            print_warning "gsettings not available, wallpaper copied but not set"
+            print_info "You can set it manually from Settings > Appearance"
+            print_info "Or run: gsettings set org.gnome.desktop.background picture-uri '$wallpaper_uri'"
+        fi
+    else
+        print_info "No wallpaper file found in $wallpaper_dir"
+        print_info "Supported names: background.jpg, wallpaper.png, desktop.webp, etc."
+        print_info "Place your wallpaper in: $wallpaper_dir/"
+        print_info "Supported formats: ${wallpaper_extensions[*]}"
+    fi
 }
 
 ###############################################################################
