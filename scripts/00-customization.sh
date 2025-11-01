@@ -642,6 +642,37 @@ enable_extension() {
     return 1
 }
 
+# Try to install extension via Extension Manager CLI or gnome-extensions-cli
+install_extension_via_manager() {
+    local extension_uuid="$1"
+    local extension_id="$2"
+    
+    # Try extension-manager CLI (if available)
+    if command -v extension-manager &> /dev/null; then
+        print_info "Trying to install via Extension Manager CLI..."
+        # Extension Manager may support install via ID
+        if extension-manager install "$extension_id" 2>/dev/null; then
+            sleep 2
+            if [[ -d "$HOME/.local/share/gnome-shell/extensions/$extension_uuid" ]]; then
+                return 0
+            fi
+        fi
+    fi
+    
+    # Try gnome-extensions-cli (if available via pip)
+    if command -v gnome-extensions-cli &> /dev/null; then
+        print_info "Trying to install via gnome-extensions-cli..."
+        if gnome-extensions-cli install "$extension_uuid" 2>/dev/null; then
+            sleep 2
+            if [[ -d "$HOME/.local/share/gnome-shell/extensions/$extension_uuid" ]]; then
+                return 0
+            fi
+        fi
+    fi
+    
+    return 1
+}
+
 configure_system_extensions() {
     if ! is_gnome; then
         return 0
@@ -654,6 +685,13 @@ configure_system_extensions() {
         print_info "Installing Extension Manager..."
         ensure_apt_updated
         sudo apt-get install -y gnome-shell-extension-manager 2>/dev/null || true
+    fi
+    
+    # Install chrome-gnome-shell for browser integration (helps with extension installation)
+    if ! is_installed "chrome-gnome-shell"; then
+        print_info "Installing chrome-gnome-shell for extension support..."
+        ensure_apt_updated
+        sudo apt-get install -y chrome-gnome-shell 2>/dev/null || true
     fi
     
     # Get GNOME Shell version for extension compatibility
@@ -688,117 +726,193 @@ configure_system_extensions() {
         return 1
     }
     
-    # Install Clipboard Indicator
+    # Install Clipboard Indicator (clipboard-indicator@tudmotu.com)
     print_info "Installing Clipboard Indicator extension..."
     local clipboard_id="779"  # Extension ID from extensions.gnome.org
     local clipboard_uuid="clipboard-indicator@tudmotu.com"
-    local clipboard_url=""
+    local clipboard_installed=false
     
-    # Try to get download URL from API
-    print_info "Fetching compatible version from extensions.gnome.org..."
-    clipboard_url=$(get_extension_download_url "$clipboard_id" "$gnome_version" 2>/dev/null || echo "")
-    
-    # If API failed, try with major version only
-    if [[ -z "$clipboard_url" ]] || [[ "$clipboard_url" == "null" ]]; then
-        print_info "Trying with major version..."
-        clipboard_url=$(get_extension_download_url "$clipboard_id" "${major_version}.0" 2>/dev/null || echo "")
-    fi
-    
-    # Multiple fallback URLs for different versions
-    if [[ -z "$clipboard_url" ]] || [[ "$clipboard_url" == "null" ]]; then
-        print_info "Using fallback URLs..."
-        # Try multiple common version numbers
-        local fallback_versions=("47" "46" "45" "44" "43" "42")
-        for version in "${fallback_versions[@]}"; do
-            local test_url="https://extensions.gnome.org/extension-data/${clipboard_uuid}.v${version}.shell-extension.zip"
-            print_info "Trying version $version..."
-            if curl -sLf --head --max-time 10 "$test_url" >/dev/null 2>&1; then
-                clipboard_url="$test_url"
-                print_success "Found compatible version: $version"
-                break
+    # First, try via Extension Manager CLI (if available)
+    if install_extension_via_manager "$clipboard_uuid" "$clipboard_id"; then
+        print_success "Clipboard Indicator installed via Extension Manager"
+        clipboard_installed=true
+    else
+        # Fallback to manual ZIP download
+        print_info "Installing Clipboard Indicator from extensions.gnome.org..."
+        local clipboard_url=""
+        
+        # Try to get download URL from API
+        print_info "Fetching compatible version from extensions.gnome.org..."
+        clipboard_url=$(get_extension_download_url "$clipboard_id" "$gnome_version" 2>/dev/null || echo "")
+        
+        # If API failed, try with major version only
+        if [[ -z "$clipboard_url" ]] || [[ "$clipboard_url" == "null" ]]; then
+            print_info "Trying with major version..."
+            clipboard_url=$(get_extension_download_url "$clipboard_id" "${major_version}.0" 2>/dev/null || echo "")
+        fi
+        
+        # Multiple fallback URLs for different versions
+        if [[ -z "$clipboard_url" ]] || [[ "$clipboard_url" == "null" ]]; then
+            print_info "Using fallback URLs..."
+            # Try multiple common version numbers (most recent first)
+            local fallback_versions=("47" "46" "45" "44" "43" "42" "41" "40")
+            for version in "${fallback_versions[@]}"; do
+                local test_url="https://extensions.gnome.org/extension-data/${clipboard_uuid}.v${version}.shell-extension.zip"
+                print_info "Trying version $version..."
+                if curl -sLf --head --max-time 10 "$test_url" >/dev/null 2>&1; then
+                    clipboard_url="$test_url"
+                    print_success "Found compatible version: $version"
+                    break
+                fi
+            done
+        fi
+        
+        if [[ -n "$clipboard_url" ]] && [[ "$clipboard_url" != "null" ]]; then
+            if install_extension_from_zip "$clipboard_uuid" "$clipboard_url"; then
+                clipboard_installed=true
             fi
-        done
+        fi
     fi
     
-    if [[ -z "$clipboard_url" ]] || [[ "$clipboard_url" == "null" ]]; then
-        print_warning "Could not find download URL for Clipboard Indicator"
-        print_info "You can install it manually via Extension Manager or visit:"
-        print_info "  https://extensions.gnome.org/extension/${clipboard_id}/clipboard-indicator/"
-    elif install_extension_from_zip "$clipboard_uuid" "$clipboard_url"; then
+    # Enable Clipboard Indicator if installed
+    if [[ "$clipboard_installed" == "true" ]]; then
         print_info "Enabling Clipboard Indicator..."
+        # Wait a moment for extension to be fully installed
+        sleep 2
+        
+        # Try multiple methods to enable
         if enable_extension "$clipboard_uuid"; then
-            print_success "Clipboard Indicator installed and enabled"
+            print_success "Clipboard Indicator installed and enabled ✓"
         else
             print_warning "Clipboard Indicator installed but could not be enabled automatically"
-            print_info "Please enable it manually via Extension Manager"
+            print_info "Trying alternative enable method..."
+            # Try direct gnome-extensions command
+            if command -v gnome-extensions &> /dev/null; then
+                if gnome-extensions enable "$clipboard_uuid" 2>/dev/null; then
+                    print_success "Clipboard Indicator enabled via gnome-extensions"
+                else
+                    print_info "Please enable manually: Open Extension Manager and toggle Clipboard Indicator ON"
+                fi
+            else
+                print_info "Please enable manually: Open Extension Manager and toggle Clipboard Indicator ON"
+            fi
         fi
     else
         print_warning "Could not install Clipboard Indicator automatically"
-        print_info "You can install it manually via Extension Manager or visit:"
-        print_info "  https://extensions.gnome.org/extension/${clipboard_id}/clipboard-indicator/"
+        print_info "Please install it manually:"
+        print_info "  1. Open Extension Manager (extension-manager)"
+        print_info "  2. Search for 'Clipboard Indicator'"
+        print_info "  3. Click Install, then toggle it ON"
+        print_info "Or visit: https://extensions.gnome.org/extension/${clipboard_id}/clipboard-indicator/"
     fi
     
-    # Install Vitals (most comprehensive - temperature, CPU, memory, network, battery)
-    print_info "Installing Vitals extension..."
-    local vitals_id="1460"  # Extension ID from extensions.gnome.org
-    local vitals_uuid="Vitals@CoreCoding.com"
-    local vitals_url=""
-    
-    # Try to get download URL from API
-    print_info "Fetching compatible version from extensions.gnome.org..."
-    vitals_url=$(get_extension_download_url "$vitals_id" "$gnome_version" 2>/dev/null || echo "")
-    
-    # If API failed, try with major version only
-    if [[ -z "$vitals_url" ]] || [[ "$vitals_url" == "null" ]]; then
-        print_info "Trying with major version..."
-        vitals_url=$(get_extension_download_url "$vitals_id" "${major_version}.0" 2>/dev/null || echo "")
-    fi
-    
-    # Multiple fallback URLs for different versions
-    if [[ -z "$vitals_url" ]] || [[ "$vitals_url" == "null" ]]; then
-        print_info "Using fallback URLs..."
-        # Try multiple common version numbers
-        local fallback_versions=("85" "84" "83" "82" "81" "80")
-        for version in "${fallback_versions[@]}"; do
-            local test_url="https://extensions.gnome.org/extension-data/${vitals_uuid}.v${version}.shell-extension.zip"
-            print_info "Trying version $version..."
-            if curl -sLf --head --max-time 10 "$test_url" >/dev/null 2>&1; then
-                vitals_url="$test_url"
-                print_success "Found compatible version: $version"
-                break
-            fi
-        done
-    fi
-    
-    if [[ -z "$vitals_url" ]] || [[ "$vitals_url" == "null" ]]; then
-        print_warning "Could not find download URL for Vitals"
-        print_info "You can install it manually via Extension Manager"
-    elif install_extension_from_zip "$vitals_uuid" "$vitals_url"; then
-        print_info "Enabling Vitals..."
-        if enable_extension "$vitals_uuid"; then
-            print_success "Vitals installed and enabled"
+    # Helper function to install and enable an extension
+    install_and_enable_extension() {
+        local extension_name="$1"
+        local extension_id="$2"
+        local extension_uuid="$3"
+        local install_success=false
+        
+        print_info "Installing $extension_name extension..."
+        
+        # First, try via Extension Manager CLI (if available)
+        if install_extension_via_manager "$extension_uuid" "$extension_id"; then
+            print_success "$extension_name installed via Extension Manager"
+            install_success=true
+        else
+            # Fallback to manual ZIP download
+            print_info "Installing $extension_name from extensions.gnome.org..."
+            local extension_url=""
             
-            # Configure Vitals to show temperature, CPU, memory, network, battery
-            if command -v dconf &> /dev/null; then
-                print_info "Configuring Vitals settings..."
-                dconf write /org/gnome/shell/extensions/vitals/show-temperature "true" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-voltage "false" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-fan "false" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-frequency "false" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-memory "true" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-cpu "true" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-network "true" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-disk "false" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-battery "true" 2>/dev/null || true
-                print_success "Vitals configured (temperature, CPU, memory, network, battery)"
+            # Try to get download URL from API
+            print_info "Fetching compatible version from extensions.gnome.org..."
+            extension_url=$(get_extension_download_url "$extension_id" "$gnome_version" 2>/dev/null || echo "")
+            
+            # If API failed, try with major version only
+            if [[ -z "$extension_url" ]] || [[ "$extension_url" == "null" ]]; then
+                print_info "Trying with major version..."
+                extension_url=$(get_extension_download_url "$extension_id" "${major_version}.0" 2>/dev/null || echo "")
+            fi
+            
+            # Multiple fallback URLs for different versions
+            if [[ -z "$extension_url" ]] || [[ "$extension_url" == "null" ]]; then
+                print_info "Using fallback URLs..."
+                # Try multiple common version numbers (most recent first)
+                local fallback_versions=("50" "49" "48" "47" "46" "45" "44" "43" "42" "41" "40")
+                for version in "${fallback_versions[@]}"; do
+                    local test_url="https://extensions.gnome.org/extension-data/${extension_uuid}.v${version}.shell-extension.zip"
+                    print_info "Trying version $version..."
+                    if curl -sLf --head --max-time 10 "$test_url" >/dev/null 2>&1; then
+                        extension_url="$test_url"
+                        print_success "Found compatible version: $version"
+                        break
+                    fi
+                done
+            fi
+            
+            if [[ -n "$extension_url" ]] && [[ "$extension_url" != "null" ]]; then
+                if install_extension_from_zip "$extension_uuid" "$extension_url"; then
+                    install_success=true
+                fi
+            fi
+        fi
+        
+        # Enable extension if installed
+        if [[ "$install_success" == "true" ]]; then
+            print_info "Enabling $extension_name..."
+            sleep 2
+            
+            if enable_extension "$extension_uuid"; then
+                print_success "$extension_name installed and enabled ✓"
+                return 0
+            else
+                print_warning "$extension_name installed but could not be enabled automatically"
+                print_info "Trying alternative enable method..."
+                if command -v gnome-extensions &> /dev/null; then
+                    if gnome-extensions enable "$extension_uuid" 2>/dev/null; then
+                        print_success "$extension_name enabled via gnome-extensions"
+                        return 0
+                    fi
+                fi
+                print_info "Please enable manually: Open Extension Manager and toggle $extension_name ON"
+                return 1
             fi
         else
-            print_warning "Vitals installed but could not be enabled automatically"
-            print_info "Please enable it manually via Extension Manager"
+            print_warning "Could not install $extension_name automatically"
+            print_info "Please install it manually:"
+            print_info "  1. Open Extension Manager (extension-manager)"
+            print_info "  2. Search for '$extension_name'"
+            print_info "  3. Click Install, then toggle it ON"
+            return 1
         fi
-    else
-        print_warning "Could not install Vitals automatically"
-        print_info "You can install it manually via Extension Manager"
+    }
+    
+    # Install Blur My Shell (adds blur effects to GNOME Shell)
+    if install_and_enable_extension "Blur My Shell" "3193" "blur-my-shell@aunetx"; then
+        print_info "Blur My Shell is now active - blur effects applied to panels and overview"
+    fi
+    
+    # Install Caffeine (prevents screen from locking/sleeping)
+    if install_and_enable_extension "Caffeine" "517" "caffeine@patapon.info"; then
+        print_info "Caffeine is now active - screen won't lock automatically"
+    fi
+    
+    # Install Vitals (system monitoring - temperature, CPU, memory, network, battery)
+    if install_and_enable_extension "Vitals" "1460" "Vitals@CoreCoding.com"; then
+        # Configure Vitals to show temperature, CPU, memory, network, battery
+        if command -v dconf &> /dev/null; then
+            print_info "Configuring Vitals settings..."
+            dconf write /org/gnome/shell/extensions/vitals/show-temperature "true" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-voltage "false" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-fan "false" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-frequency "false" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-memory "true" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-cpu "true" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-network "true" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-disk "false" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-battery "true" 2>/dev/null || true
+            print_success "Vitals configured (temperature, CPU, memory, network, battery)"
+        fi
     fi
     
     # Refresh GNOME Shell to load extensions
@@ -810,6 +924,8 @@ configure_system_extensions() {
     print_info ""
     print_info "📋 Extensions installed and enabled:"
     print_info "   - Clipboard Indicator (clipboard icon in top bar)"
+    print_info "   - Blur My Shell (blur effects on panels and overview)"
+    print_info "   - Caffeine (prevents screen lock/sleep)"
     print_info "   - Vitals (temperature, CPU, memory, network, battery in top bar)"
     print_info ""
     print_info "💡 If extensions don't appear:"
