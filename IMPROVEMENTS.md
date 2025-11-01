@@ -34,12 +34,12 @@ Melhorias de alta e média prioridade já implementadas:
 
 **Melhorias implementadas**:
 
-- ✅ **Temas GTK**: Instala e configura temas dark (Adwaita Dark, Arc Dark, Yaru Dark)
-- ✅ **Ícones**: Instala e configura Papirus Dark (com fallback para Papirus e Yaru Dark)
+- ✅ **Temas GTK**: Usa tema dark nativo do Zorin OS (via `color-scheme: prefer-dark`)
+- ✅ **Ícones**: Usa ícones nativos do Zorin OS (modo dark automático)
 - ✅ **Fontes**: Instala e configura Inter e JetBrains Mono system-wide
 - ✅ **Wallpaper**: Configura automaticamente wallpaper dark de `assets/wallpapers/background.jpg`
 - ✅ **Cores de acento**: Configura color-scheme prefer-dark para aplicações GTK
-- ✅ **Zorin OS específico**: Configura temas específicos do Zorin OS
+- ✅ **Zorin OS específico**: Configura temas específicos do Zorin OS usando modo dark nativo
 
 #### 🖥️ Terminal e Shell
 
@@ -54,22 +54,20 @@ Melhorias de alta e média prioridade já implementadas:
 
 #### 🎭 Extensões GNOME (Zorin OS)
 
-**Status**: ✅ **PARCIALMENTE IMPLEMENTADO**
+**Status**: ✅ **IMPLEMENTADO**
 
 **Melhorias implementadas**:
 
 - ✅ **Extension Manager**: Instala automaticamente `gnome-shell-extension-manager`
-- ✅ **Clipboard Indicator**: Configuração e instruções de instalação
-- ✅ **Vitals**: Configuração completa para mostrar temperatura, CPU, memória, rede e bateria
-- ✅ **User Themes**: Habilita automaticamente se instalado
-- ✅ **Sistema de monitoramento**: Configuração para mostrar informações do sistema na barra superior
-- ⚠️ **Outras extensões**: Instruções e recomendações fornecidas, mas instalação manual via Extension Manager
-
-**Melhorias pendentes**:
-
-- ⏳ Dash to Dock/Dock: Instruções fornecidas, mas não instalado automaticamente
-- ⏳ Blur My Shell: Instruções fornecidas, mas não instalado automaticamente
-- ⏳ GSConnect, AppIndicator, Caffeine, etc.: Instruções fornecidas
+- ✅ **Clipboard Indicator**: Instalação e ativação automática (com re-ativação forçada)
+- ✅ **Blur My Shell**: Instalação e ativação automática (efeitos de blur)
+- ✅ **Caffeine**: Instalação e ativação automática (previne bloqueio de tela)
+- ✅ **Dash to Panel**: Instalação e ativação automática (combina dash e top panel)
+- ✅ **Vitals**: Instalação e ativação automática com configuração completa (temperatura, CPU, memória, rede, bateria)
+- ✅ **Download automático via API**: Usa extensions.gnome.org API para baixar versões compatíveis
+- ✅ **Re-ativação forçada**: Re-habilita extensões após instalação para garantir funcionamento
+- ✅ **Verificação de compatibilidade**: Verifica versão do GNOME Shell antes de instalar
+- ✅ **Permissões corrigidas automaticamente**: Garante que extensões tenham permissões corretas
 
 #### 🎬 Animações e Efeitos
 
@@ -100,7 +98,16 @@ Melhorias de alta e média prioridade já implementadas:
 
 ## 💡 Melhorias Futuras (Nice to Have)
 
-### 1. Tratamento de Erros Melhorado
+### 1. ✅ Seleção Interativa de Componentes - IMPLEMENTADO
+
+**Melhorias implementadas**:
+
+- ✅ Sistema de seleção interativa no início do bootstrap.sh
+- ✅ Permite marcar/desmarcar scripts individuais para instalação
+- ✅ Valida seleções e permite editar antes de confirmar
+- ✅ Mostra resumo antes de iniciar instalação
+
+### 2. Tratamento de Erros Melhorado
 
 **Melhorias**:
 
@@ -108,7 +115,7 @@ Melhorias de alta e média prioridade já implementadas:
 - Opção de modo verbose para debugging (`--verbose`)
 - Continuar instalação mesmo se um item falhar (com resumo final)
 
-### 2. Paralelização de Instalações
+### 3. Paralelização de Instalações
 
 **Melhorias**:
 
@@ -116,7 +123,7 @@ Melhorias de alta e média prioridade já implementadas:
 - Aplicar apenas para pacotes pequenos e independentes
 - Cuidado com dependências!
 
-### 3. Testes Automatizados
+### 4. Testes Automatizados
 
 **Melhorias**:
 

@@ -151,11 +151,11 @@ fi
 **Behavior**:
 
 - Checks OS compatibility (Zorin/Ubuntu)
+- **Interactive component selection** - User can select which scripts to run
 - Verifies internet connectivity before proceeding
 - Automatically renews sudo during long installations
 - Centralized apt-get update (optimization)
-- Executes scripts 00 and 01-08 always (00 = visual customization, runs first)
-- Prompts user for script 09 (Extras)
+- Executes selected scripts in order (scripts 00-08 selected by default, 09 optional)
 - Sources `scripts/common.sh` for shared functions
 - Provides colored output (info, success, warning, error)
 - Exits on error (`set -e`)
@@ -472,12 +472,11 @@ fi
 **Installs & Configures**:
 
 - **GTK Themes**:
-  - `arc-theme` - Popular dark GTK theme
-  - `adwaita-icon-theme` - Includes Adwaita Dark theme
-  - Configures system to use dark themes (Adwaita Dark, Arc Dark, Yaru Dark)
+  - Uses Zorin OS native dark theme (via `color-scheme: prefer-dark`)
+  - Automatically applies dark variant of Zorin OS theme
 - **Icon Themes**:
-  - `papirus-icon-theme` - Dark icon set (Papirus Dark)
-  - Configures Papirus Dark as default icon theme
+  - Uses Zorin OS native icon theme
+  - Automatically uses dark variant
 - **Custom Fonts**:
   - **Inter** - Modern interface font (downloaded from GitHub)
   - **JetBrains Mono** - Monospace font for terminal/editors (downloaded from GitHub)
@@ -498,9 +497,16 @@ fi
   - Supports multiple formats (jpg, jpeg, png, webp)
 - **GNOME Extensions**:
   - Installs `gnome-shell-extension-manager` for easy extension management
-  - Configures system monitoring extensions (Vitals, Clipboard Indicator)
-  - Provides installation instructions for recommended extensions
-  - Auto-enables and configures extensions if already installed
+  - Automatically installs and enables:
+    - **Clipboard Indicator** - Clipboard manager in top bar
+    - **Blur My Shell** - Blur effects on panels and overview
+    - **Caffeine** - Prevents screen lock/sleep
+    - **Dash to Panel** - Combines dash and top panel
+    - **Vitals** - System monitoring (temperature, CPU, memory, network, battery)
+  - Uses extensions.gnome.org API for automatic download
+  - Verifies compatibility with GNOME Shell version
+  - Corrects permissions automatically
+  - Forces re-enablement to ensure extensions are active
 
 **Configuration**:
 

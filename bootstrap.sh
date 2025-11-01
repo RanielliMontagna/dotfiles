@@ -218,6 +218,142 @@ print_header() {
     echo -e "${BLUE}========================================${NC}\n"
 }
 
+# Interactive component selection
+select_components() {
+    # Define scripts in order with descriptions
+    local script_names=("00-customization.sh" "01-essentials.sh" "02-shell.sh" "03-nodejs.sh" "04-editors.sh" "05-docker.sh" "06-java.sh" "07-dev-tools.sh" "08-applications.sh" "09-extras.sh")
+    declare -A descriptions=(
+        ["00-customization.sh"]="🎨 Visual Customization (Dark Theme, Fonts, Extensions)"
+        ["01-essentials.sh"]="📦 Essential Tools (Git, Build Tools, CLI Tools)"
+        ["02-shell.sh"]="🐚 Shell Setup (Zsh, Oh My Zsh, Powerlevel10k)"
+        ["03-nodejs.sh"]="🟢 Node.js (NVM, Node LTS, npm packages)"
+        ["04-editors.sh"]="📝 Code Editors (VS Code, Cursor)"
+        ["05-docker.sh"]="🐳 Docker (Engine, Compose)"
+        ["06-java.sh"]="☕ Java SDK (SDKMAN, Java 8/11/17/21)"
+        ["07-dev-tools.sh"]="🛠️ Development Tools (Android Studio, DBeaver, Postman)"
+        ["08-applications.sh"]="🌐 Applications (Browsers, Steam, Spotify, NordVPN, etc.)"
+        ["09-extras.sh"]="🔧 Extra Tools (Python, GitHub CLI, Databases) - Optional"
+    )
+    
+    # Initialize selection array (all enabled by default except 09-extras.sh)
+    declare -A selected
+    selected["00-customization.sh"]=1
+    selected["01-essentials.sh"]=1
+    selected["02-shell.sh"]=1
+    selected["03-nodejs.sh"]=1
+    selected["04-editors.sh"]=1
+    selected["05-docker.sh"]=1
+    selected["06-java.sh"]=1
+    selected["07-dev-tools.sh"]=1
+    selected["08-applications.sh"]=1
+    selected["09-extras.sh"]=0  # Optional by default
+    
+    while true; do
+        clear
+        echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}"
+        echo -e "${BLUE}🚀 Dotfiles Setup - Component Selection${NC}"
+        echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}\n"
+        echo -e "${YELLOW}Select which components to install:${NC}\n"
+        
+        local index=1
+        for script in "${script_names[@]}"; do
+            local checkbox
+            if [[ "${selected[$script]}" == "1" ]]; then
+                checkbox="${GREEN}✓${NC}"
+            else
+                checkbox="${RED}✗${NC}"
+            fi
+            
+            # Check if script exists
+            local exists=""
+            if [[ ! -f "$SCRIPTS_DIR/$script" ]]; then
+                exists="${RED}[MISSING]${NC}"
+            fi
+            
+            printf "  ${BLUE}%2d)${NC} ${checkbox} %-50s ${exists}\n" "$index" "${descriptions[$script]}"
+            index=$((index + 1))
+        done
+        
+        echo -e "\n${BLUE}════════════════════════════════════════════════════════════${NC}"
+        echo -e "${GREEN}✓${NC} = Selected    ${RED}✗${NC} = Not Selected"
+        echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}\n"
+        echo -e "Commands:"
+        echo -e "  ${GREEN}1-10${NC}   - Toggle component (1 = 00-customization.sh, 2 = 01-essentials.sh, etc.)"
+        echo -e "  ${GREEN}a${NC}      - Select all"
+        echo -e "  ${GREEN}d${NC}      - Deselect all"
+        echo -e "  ${GREEN}s${NC}      - Select essential only (00-08)"
+        echo -e "  ${GREEN}Enter${NC}  - Confirm and continue"
+        echo -e "  ${GREEN}q${NC}      - Quit"
+        echo ""
+        read -p "Your choice: " choice
+        
+        case "$choice" in
+            [1-9]|10)
+                local script_index=$((choice - 1))
+                if [[ $script_index -ge 0 ]] && [[ $script_index -lt ${#script_names[@]} ]]; then
+                    local script_name="${script_names[$script_index]}"
+                    if [[ "${selected[$script_name]}" == "1" ]]; then
+                        selected["$script_name"]=0
+                    else
+                        selected["$script_name"]=1
+                    fi
+                fi
+                ;;
+            a|A)
+                for script in "${script_names[@]}"; do
+                    selected["$script"]=1
+                done
+                ;;
+            d|D)
+                for script in "${script_names[@]}"; do
+                    selected["$script"]=0
+                done
+                ;;
+            s|S)
+                for script in "${script_names[@]}"; do
+                    if [[ "$script" == "09-extras.sh" ]]; then
+                        selected["$script"]=0
+                    else
+                        selected["$script"]=1
+                    fi
+                done
+                ;;
+            "")
+                # Enter pressed - confirm selection
+                local has_selection=false
+                for script in "${script_names[@]}"; do
+                    if [[ "${selected[$script]}" == "1" ]]; then
+                        has_selection=true
+                        break
+                    fi
+                done
+                
+                if [[ "$has_selection" == "true" ]]; then
+                    # Save selection to global array (in order)
+                    SELECTED_SCRIPTS=()
+                    for script in "${script_names[@]}"; do
+                        if [[ "${selected[$script]}" == "1" ]]; then
+                            SELECTED_SCRIPTS+=("$script")
+                        fi
+                    done
+                    return 0
+                else
+                    echo -e "\n${RED}✗${NC} Please select at least one component!"
+                    sleep 2
+                fi
+                ;;
+            q|Q)
+                echo -e "\n${YELLOW}Installation cancelled by user.${NC}"
+                exit 0
+                ;;
+            *)
+                echo -e "\n${RED}Invalid choice. Please try again.${NC}"
+                sleep 1
+                ;;
+        esac
+    done
+}
+
 # Check if running on Ubuntu/Zorin
 check_os() {
     if [[ ! -f /etc/os-release ]]; then
@@ -245,6 +381,31 @@ check_os() {
 main() {
     print_header "🚀 Dotfiles Setup for Zorin OS"
     
+    # Interactive component selection
+    if [[ -z "$DISPLAY" ]] && [[ -z "$SSH_TTY" ]]; then
+        # If running in a non-interactive environment, select all by default
+        SELECTED_SCRIPTS=("00-customization.sh" "01-essentials.sh" "02-shell.sh" "03-nodejs.sh" "04-editors.sh" "05-docker.sh" "06-java.sh" "07-dev-tools.sh" "08-applications.sh")
+        print_info "Non-interactive mode: Installing all essential components"
+    else
+        # Interactive selection
+        select_components
+        
+        # Show summary
+        echo ""
+        print_header "📋 Installation Summary"
+        echo -e "${GREEN}Selected components:${NC}"
+        for script in "${SELECTED_SCRIPTS[@]}"; do
+            echo -e "  ${GREEN}✓${NC} $script"
+        done
+        echo ""
+        read -p "Proceed with installation? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_info "Installation cancelled by user."
+            exit 0
+        fi
+    fi
+    
     print_info "Starting setup process..."
     print_info "Dotfiles directory: $DOTFILES_DIR"
     
@@ -255,22 +416,10 @@ main() {
         exit 1
     fi
     
-    # Verify essential scripts exist
-    local required_scripts=(
-        "00-customization.sh"
-        "01-essentials.sh"
-        "02-shell.sh"
-        "03-nodejs.sh"
-        "04-editors.sh"
-        "05-docker.sh"
-        "06-java.sh"
-        "07-dev-tools.sh"
-        "08-applications.sh"
-    )
-    
-    for script in "${required_scripts[@]}"; do
+    # Verify selected scripts exist
+    for script in "${SELECTED_SCRIPTS[@]}"; do
         if [[ ! -f "$SCRIPTS_DIR/$script" ]]; then
-            print_error "Required script not found: $SCRIPTS_DIR/$script"
+            print_error "Selected script not found: $SCRIPTS_DIR/$script"
             print_error "Please make sure you've cloned the complete repository."
             exit 1
         fi
@@ -310,43 +459,30 @@ main() {
     # Make sure all scripts are executable
     chmod +x "$SCRIPTS_DIR"/*.sh 2>/dev/null || true
     
-    # Run installation scripts in order
-    # Start with visual customization first (better UX - user sees the system getting beautiful from the start)
-    print_header "🎨 Visual Customization (Dark Theme)"
-    bash "$SCRIPTS_DIR/00-customization.sh"
+    # Script headers mapping
+    declare -A script_headers=(
+        ["00-customization.sh"]="🎨 Visual Customization (Dark Theme)"
+        ["01-essentials.sh"]="📦 Installing Essential Tools"
+        ["02-shell.sh"]="🐚 Setting up Shell (Zsh)"
+        ["03-nodejs.sh"]="🟢 Installing Node.js (via NVM)"
+        ["04-editors.sh"]="📝 Installing Code Editors"
+        ["05-docker.sh"]="🐳 Installing Docker"
+        ["06-java.sh"]="☕ Installing Java SDK"
+        ["07-dev-tools.sh"]="🛠️ Installing Development Tools"
+        ["08-applications.sh"]="🌐 Installing Applications"
+        ["09-extras.sh"]="🔧 Installing Extra Tools"
+    )
     
-    print_header "📦 Installing Essential Tools"
-    bash "$SCRIPTS_DIR/01-essentials.sh"
-    
-    print_header "🐚 Setting up Shell (Zsh)"
-    bash "$SCRIPTS_DIR/02-shell.sh"
-    
-    print_header "🟢 Installing Node.js (via NVM)"
-    bash "$SCRIPTS_DIR/03-nodejs.sh"
-    
-    print_header "📝 Installing Code Editors"
-    bash "$SCRIPTS_DIR/04-editors.sh"
-    
-    print_header "🐳 Installing Docker"
-    bash "$SCRIPTS_DIR/05-docker.sh"
-    
-    print_header "☕ Installing Java SDK"
-    bash "$SCRIPTS_DIR/06-java.sh"
-    
-    print_header "🛠️ Installing Development Tools"
-    bash "$SCRIPTS_DIR/07-dev-tools.sh"
-    
-    print_header "🌐 Installing Applications"
-    bash "$SCRIPTS_DIR/08-applications.sh"
-    
-    print_header "🔧 Installing Extra Tools"
-    read -p "Install extra development tools? (y/N) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        bash "$SCRIPTS_DIR/09-extras.sh"
-    else
-        print_info "Skipping extra tools installation"
-    fi
+    # Run selected installation scripts in order
+    for script in "${SELECTED_SCRIPTS[@]}"; do
+        if [[ -f "$SCRIPTS_DIR/$script" ]]; then
+            local header="${script_headers[$script]:-Running $script}"
+            print_header "$header"
+            bash "$SCRIPTS_DIR/$script"
+        else
+            print_warning "Script not found: $script (skipping)"
+        fi
+    done
     
     print_header "✨ Setup Complete!"
     print_success "Your development environment is ready!"

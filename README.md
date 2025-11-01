@@ -44,6 +44,8 @@ cd dotfiles
 bash bootstrap.sh
 ```
 
+> 💡 **Tip**: The bootstrap script will show an interactive menu where you can select which components to install. By default, all essential components (00-08) are selected.
+
 ### Method 2: One-Line Install
 
 ```bash
@@ -135,15 +137,19 @@ DOTFILES_BRANCH=feat/visual-customization curl -fsSL https://raw.githubuserconte
 ### Visual Customization (Always Installed)
 
 - **Dark Theme**: Complete dark theme setup for Zorin OS/GNOME
-  - GTK themes: Adwaita Dark, Arc Dark, Yaru Dark
-  - Icon themes: Papirus Dark
+  - Uses Zorin OS native dark theme (automatically via `color-scheme: prefer-dark`)
   - System-wide dark color scheme
 - **Custom Fonts**:
   - Inter (modern interface font)
   - JetBrains Mono (monospace for terminal/editors)
 - **Wallpaper**: Automatic dark wallpaper configuration
 - **GNOME Terminal**: Pre-configured dark profile with Nord theme colors
-- **GNOME Extensions**: Extension Manager + system monitoring setup (Vitals, Clipboard Indicator)
+- **GNOME Extensions**: Automatically installs and enables:
+  - Clipboard Indicator (clipboard manager)
+  - Blur My Shell (blur effects)
+  - Caffeine (prevents screen lock)
+  - Dash to Panel (combines dash and top panel)
+  - Vitals (system monitoring: CPU, memory, temperature, network, battery)
 
 ### Extra Tools (Optional)
 
