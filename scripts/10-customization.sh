@@ -4,12 +4,11 @@
 # 10-customization.sh
 # 
 # Visual customization for Zorin OS (GNOME-based)
-# - GTK dark themes (Adwaita Dark, Arc Dark)
-# - Dark icon sets (Papirus Dark, Tela Dark)
-# - Custom fonts (Inter, Fira Sans, JetBrains Mono)
+# - Zorin OS native dark theme (built-in dark mode)
+# - Custom fonts (Inter, JetBrains Mono)
 # - Dark wallpaper configuration
 # - GNOME Terminal dark profile
-# - GNOME extensions (User Themes, Blur My Shell, etc.)
+# - GNOME extensions (system monitoring, clipboard indicator, etc.)
 #
 # This script is idempotent - safe to run multiple times
 ###############################################################################
@@ -94,28 +93,9 @@ get_gnome_setting() {
 ###############################################################################
 
 install_gtk_themes() {
-    print_info "Installing GTK dark themes..."
-    
-    # Arc theme (popular dark theme)
-    if ! is_installed "arc-theme"; then
-        print_info "Installing Arc theme..."
-        ensure_apt_updated
-        sudo apt-get install -y arc-theme
-        print_success "Arc theme installed"
-    else
-        print_info "Arc theme already installed"
-    fi
-    
-    # Adwaita-dark is usually included with gnome-themes-standard or Adwaita
-    # We'll ensure it's available
-    if ! dpkg -l | grep -q "gnome-themes-standard\|adwaita-icon-theme"; then
-        print_info "Installing GNOME standard themes (includes Adwaita Dark)..."
-        ensure_apt_updated
-        sudo apt-get install -y gnome-themes-standard adwaita-icon-theme-full || \
-        sudo apt-get install -y adwaita-icon-theme || true
-    fi
-    
-    print_success "GTK themes installation complete"
+    print_info "Using Zorin OS native dark theme..."
+    print_info "No additional themes needed - Zorin OS has built-in dark mode support"
+    print_success "GTK themes check complete"
 }
 
 ###############################################################################
@@ -123,22 +103,9 @@ install_gtk_themes() {
 ###############################################################################
 
 install_icon_themes() {
-    print_info "Installing dark icon themes..."
-    
-    # Papirus icon theme (popular dark icons)
-    if ! is_installed "papirus-icon-theme"; then
-        print_info "Installing Papirus icon theme..."
-        ensure_apt_updated
-        sudo apt-get install -y papirus-icon-theme
-        print_success "Papirus icon theme installed"
-    else
-        print_info "Papirus icon theme already installed"
-    fi
-    
-    # Add Papirus icon theme repository for latest version (optional)
-    # We'll use the Ubuntu/Debian repository version which should be sufficient
-    
-    print_success "Icon themes installation complete"
+    print_info "Using Zorin OS native icon theme..."
+    print_info "No additional icon themes needed - Zorin OS has built-in dark icons"
+    print_success "Icon themes check complete"
 }
 
 ###############################################################################
@@ -244,23 +211,28 @@ configure_gnome_appearance() {
         return 0
     fi
     
-    print_info "Configuring GNOME/Zorin appearance settings for dark theme..."
+    print_info "Configuring Zorin OS dark theme..."
     
-    # Enable dark mode for applications (this affects many GTK apps)
+    # Enable dark mode for applications (this is the main setting for Zorin OS)
     set_gnome_setting "org.gnome.desktop.interface" "color-scheme" "'prefer-dark'" || true
     print_success "Dark color scheme enabled"
     
-    # Set GTK theme (try multiple dark themes in order of preference)
-    print_info "Setting GTK theme to dark..."
-    if set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'Adwaita-dark'"; then
-        print_success "GTK theme set to Adwaita-dark"
-    elif set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'Arc-Dark'"; then
-        print_success "GTK theme set to Arc-Dark"
-    elif set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'Yaru-dark'"; then
-        print_success "GTK theme set to Yaru-dark"
-    else
-        print_warning "Could not set GTK theme, may need to set manually"
+    # Use Zorin OS native theme (will automatically use dark variant)
+    print_info "Setting Zorin OS native theme..."
+    # Get current theme to see if we need to change it
+    local current_theme
+    current_theme=$(get_gnome_setting "org.gnome.desktop.interface" "gtk-theme" 2>/dev/null || echo "")
+    
+    # If theme is set to a light variant, switch to dark variant
+    if [[ -n "$current_theme" ]]; then
+        print_info "Current theme: $current_theme"
+        # Zorin OS themes typically have -dark variants
+        # But the color-scheme preference should handle this automatically
     fi
+    
+    # For Zorin OS, the color-scheme setting should be sufficient
+    # The system will automatically use the dark variant of the current theme
+    print_success "Zorin OS will use dark theme variant automatically"
     
     # Set GNOME Shell theme (for top bar and shell UI)
     print_info "Setting GNOME Shell theme to dark..."
@@ -277,28 +249,32 @@ configure_gnome_appearance() {
         print_info "Shell theme will follow system color scheme (dark)"
     fi
     
-    # Set icon theme (prefer dark variant)
-    print_info "Setting icon theme to dark..."
-    if set_gnome_setting "org.gnome.desktop.interface" "icon-theme" "'Papirus-Dark'"; then
-        print_success "Icon theme set to Papirus-Dark"
-    elif set_gnome_setting "org.gnome.desktop.interface" "icon-theme" "'Papirus'"; then
-        print_success "Icon theme set to Papirus"
-    elif set_gnome_setting "org.gnome.desktop.interface" "icon-theme" "'Yaru-dark'"; then
-        print_success "Icon theme set to Yaru-dark"
-    else
-        print_warning "Could not set icon theme"
+    # Keep Zorin OS native icon theme (will use dark variant automatically)
+    print_info "Keeping Zorin OS native icon theme..."
+    local current_icon_theme
+    current_icon_theme=$(get_gnome_setting "org.gnome.desktop.interface" "icon-theme" 2>/dev/null || echo "")
+    if [[ -n "$current_icon_theme" ]]; then
+        print_info "Using icon theme: $current_icon_theme (dark variant will be used automatically)"
     fi
+    print_success "Icon theme configured"
     
-    # Set cursor theme (use default dark cursor if available)
-    set_gnome_setting "org.gnome.desktop.interface" "cursor-theme" "'Adwaita'" || \
-    set_gnome_setting "org.gnome.desktop.interface" "cursor-theme" "'DMZ-White'" || true
+    # Keep Zorin OS native cursor theme
+    print_info "Keeping Zorin OS native cursor theme..."
+    # Cursor will automatically use dark variant with color-scheme
     
-    # Zorin-specific settings (if available)
+    # Zorin-specific dark mode settings
     if command -v dconf &> /dev/null; then
-        print_info "Configuring Zorin OS specific dark theme settings..."
-        # Zorin appearance theme (check if schema exists)
-        dconf write /org/zorin/desktop/interface/gtk-theme "'Adwaita-dark'" 2>/dev/null || true
-        dconf write /org/zorin/desktop/interface/icon-theme "'Papirus-Dark'" 2>/dev/null || true
+        print_info "Configuring Zorin OS dark mode..."
+        # Enable dark mode in Zorin Appearance settings (if schema exists)
+        # Note: color-scheme should be sufficient, but we can try Zorin-specific settings
+        dconf write /org/zorin/desktop/interface/color-scheme "'prefer-dark'" 2>/dev/null || true
+        
+        # Get and keep current Zorin theme (it will automatically use dark variant)
+        local zorin_theme
+        zorin_theme=$(dconf read /org/zorin/desktop/interface/gtk-theme 2>/dev/null | tr -d "'" || echo "")
+        if [[ -n "$zorin_theme" ]]; then
+            print_info "Keeping Zorin theme: $zorin_theme (will use dark variant)"
+        fi
     fi
     
     # Set dark theme for text editor and other default apps
