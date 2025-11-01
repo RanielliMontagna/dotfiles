@@ -441,7 +441,7 @@ install_gnome_extensions() {
     
     print_info "Installing GNOME extensions support..."
     
-    # Install GNOME Shell Extensions tool
+    # Install GNOME Shell Extensions tool and Extension Manager
     if ! command -v gnome-extensions-app &> /dev/null && ! is_installed "gnome-shell-extensions"; then
         print_info "Installing GNOME Shell Extensions..."
         ensure_apt_updated
@@ -453,17 +453,126 @@ install_gnome_extensions() {
         print_info "GNOME Shell Extensions already installed"
     fi
     
-    # Note: Installing extensions via command line is complex and requires UUIDs
-    # It's better to install them via the Extensions app or browser extension
-    print_info "GNOME extensions can be installed via:"
-    print_info "  1. GNOME Extensions app (search 'Extensions' in Activities)"
-    print_info "  2. https://extensions.gnome.org (with browser extension)"
+    # Install gnome-extensions-cli if available (for easier extension management)
+    if ! command -v gnome-extensions-cli &> /dev/null; then
+        print_info "Installing gnome-extensions-cli for extension management..."
+        ensure_apt_updated
+        # Try to install via pip (may require python3-pip)
+        if command -v pip3 &> /dev/null || command -v pip &> /dev/null; then
+            pip3 install --user gnome-extensions-cli 2>/dev/null || \
+            pip install --user gnome-extensions-cli 2>/dev/null || true
+        fi
+    fi
+    
+    print_info "Configuring system monitoring extensions..."
+    configure_system_extensions
+}
+
+###############################################################################
+# Configure System Extensions (Clipboard, System Monitor, etc.)
+###############################################################################
+
+configure_system_extensions() {
+    if ! is_gnome; then
+        return 0
+    fi
+    
+    print_info "Setting up system extensions configuration..."
+    
+    # List of useful extensions with their UUIDs and installation methods
+    # These will be installed via Extension Manager or manual instructions
+    
+    print_info "Recommended extensions for system monitoring:"
     print_info ""
-    print_info "Recommended extensions for dark theme:"
-    print_info "  - User Themes (enable custom themes)"
-    print_info "  - Blur My Shell (blur effects)"
-    print_info "  - Dash to Dock (custom dock)"
-    print_info "  - Just Perfection (UI controls)"
+    print_info "📋 Clipboard Indicator"
+    print_info "   UUID: clipboard-indicator@tudmotu.com"
+    print_info "   URL: https://extensions.gnome.org/extension/779/clipboard-indicator/"
+    print_info ""
+    print_info "📊 Vitals (Temperature, CPU, Memory, Network)"
+    print_info "   UUID: Vitals@CoreCoding.com"
+    print_info "   URL: https://extensions.gnome.org/extension/1460/vitals/"
+    print_info ""
+    print_info "🌡️  Freon (Temperature Monitoring)"
+    print_info "   UUID: freon@UshakovVasilii_Github.yahoo.com"
+    print_info "   URL: https://extensions.gnome.org/extension/841/freon/"
+    print_info ""
+    print_info "💻 System Monitor"
+    print_info "   UUID: system-monitor@paradoxxx.zero.gmail.com"
+    print_info "   URL: https://extensions.gnome.org/extension/450/system-monitor/"
+    print_info ""
+    
+    # Install Extension Manager if not available
+    if ! command -v extension-manager &> /dev/null && ! is_installed "gnome-shell-extension-manager"; then
+        print_info "Installing Extension Manager for easier extension installation..."
+        ensure_apt_updated
+        sudo apt-get install -y gnome-shell-extension-manager 2>/dev/null || true
+    fi
+    
+    # Try to install extensions via gnome-extensions if available
+    if command -v gnome-extensions &> /dev/null; then
+        local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+        mkdir -p "$extensions_dir"
+        
+        # Check GNOME Shell version for compatibility
+        local gnome_version
+        gnome_version=$(gnome-shell --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "44")
+        
+        print_info "GNOME Shell version detected: $gnome_version"
+        print_info "Attempting to install extensions..."
+        
+        # Note: Direct installation requires downloading extension files
+        # For now, we'll provide instructions and try to enable if already installed
+        print_info ""
+        print_info "📥 Quick Installation via Extension Manager:"
+        print_info "  1. Open Extension Manager (search 'Extensions' in Activities)"
+        print_info "  2. Browse and install:"
+        print_info "     - 'Clipboard Indicator' by Tudmotu"
+        print_info "     - 'Vitals' by CoreCoding (recommended - shows all metrics)"
+        print_info ""
+    else
+        print_info ""
+        print_info "To install these extensions:"
+        print_info "  1. Open Extension Manager (if installed) from Activities"
+        print_info "  2. Or visit https://extensions.gnome.org"
+        print_info "  3. Install 'GNOME Shell Integration' browser extension first"
+        print_info "  4. Then click 'ON' on the extension pages to install"
+    fi
+    
+    # Configure extensions if Extension Manager is available
+    if command -v gnome-extensions &> /dev/null; then
+        print_info "Checking installed extensions..."
+        
+        # Enable clipboard indicator if installed
+        if gnome-extensions list | grep -q "clipboard-indicator"; then
+            gnome-extensions enable clipboard-indicator@tudmotu.com 2>/dev/null || true
+            print_success "Clipboard Indicator enabled"
+        fi
+        
+        # Enable Vitals if installed
+        if gnome-extensions list | grep -q "Vitals"; then
+            gnome-extensions enable Vitals@CoreCoding.com 2>/dev/null || true
+            print_success "Vitals enabled"
+            
+            # Configure Vitals to show temperature, CPU, memory, network
+            if command -v dconf &> /dev/null; then
+                dconf write /org/gnome/shell/extensions/vitals/show-temperature "true" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-voltage "false" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-fan "false" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-frequency "false" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-memory "true" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-cpu "true" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-network "true" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-disk "false" 2>/dev/null || true
+                dconf write /org/gnome/shell/extensions/vitals/show-battery "true" 2>/dev/null || true
+                print_success "Vitals configured (temperature, CPU, memory, network, battery)"
+            fi
+        fi
+    fi
+    
+    print_info ""
+    print_info "💡 Tip: After installing extensions, restart GNOME Shell:"
+    print_info "   Press Alt+F2, type 'r' and press Enter"
+    print_info "   Or log out and log back in"
 }
 
 ###############################################################################
