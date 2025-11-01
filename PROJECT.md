@@ -94,6 +94,7 @@ dotfiles/
 - **Editor**: `nano` - Simple text editor
 - **Terminal**: `tmux`
 - **Network tools**: `net-tools` (ifconfig, netstat, route)
+- **Partition editor**: `gparted` - GUI tool for disk partition management
 
 **Idempotency**: Checks via `dpkg -l` before installing
 

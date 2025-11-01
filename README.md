@@ -57,6 +57,7 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 - **Version control**: Git, Git LFS
 - **Network tools**: curl, wget, ca-certificates, net-tools
 - **Modern CLI**: ripgrep, bat, fd-find, fzf, htop, tree, jq
+- **System tools**: GParted (partition editor)
 - **System monitoring**: htop, lm-sensors, nvtop
 - **Editor**: nano (text editor)
 

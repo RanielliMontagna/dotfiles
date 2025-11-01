@@ -95,6 +95,7 @@ main() {
         "bat"               # Cat with syntax highlighting
         "fd-find"           # Fast find alternative
         "fzf"               # Fuzzy finder
+        "gparted"           # Partition editor (GUI)
     )
     
     print_info "Installing essential packages..."
