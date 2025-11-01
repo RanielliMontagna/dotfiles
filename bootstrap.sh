@@ -154,6 +154,7 @@ main() {
     
     # Verify essential scripts exist
     local required_scripts=(
+        "00-customization.sh"
         "01-essentials.sh"
         "02-shell.sh"
         "03-nodejs.sh"
@@ -207,6 +208,10 @@ main() {
     chmod +x "$SCRIPTS_DIR"/*.sh 2>/dev/null || true
     
     # Run installation scripts in order
+    # Start with visual customization first (better UX - user sees the system getting beautiful from the start)
+    print_header "🎨 Visual Customization (Dark Theme)"
+    bash "$SCRIPTS_DIR/00-customization.sh"
+    
     print_header "📦 Installing Essential Tools"
     bash "$SCRIPTS_DIR/01-essentials.sh"
     
@@ -230,9 +235,6 @@ main() {
     
     print_header "🌐 Installing Applications"
     bash "$SCRIPTS_DIR/08-applications.sh"
-    
-    print_header "🎨 Visual Customization (Dark Theme)"
-    bash "$SCRIPTS_DIR/10-customization.sh"
     
     print_header "🔧 Installing Extra Tools"
     read -p "Install extra development tools? (y/N) " -n 1 -r

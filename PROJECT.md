@@ -36,8 +36,8 @@ dotfiles/
 │   ├── 06-java.sh            # Java SDK via SDKMAN (always installed)
 │   ├── 07-dev-tools.sh      # Android Studio, DBeaver, Postman (always installed)
 │   ├── 08-applications.sh   # Browsers, Steam, media apps, NordVPN (always installed)
-│   ├── 09-extras.sh          # Python, GitHub CLI, databases (optional)
-│   └── 10-customization.sh   # Visual customization (dark theme, extensions, fonts)
+│   ├── 00-customization.sh     # Visual customization (dark theme, extensions, fonts)
+│   └── 09-extras.sh          # Python, GitHub CLI, databases (optional)
 ├── dotfiles/                 # Configuration files (symlinked to ~/)
 │   ├── .zshrc               # Zsh configuration with plugins and theme
 │   ├── .gitconfig           # Git aliases and sensible defaults
@@ -154,7 +154,7 @@ fi
 - Verifies internet connectivity before proceeding
 - Automatically renews sudo during long installations
 - Centralized apt-get update (optimization)
-- Executes scripts 01-08 and 10 always
+- Executes scripts 00 and 01-08 always (00 = visual customization, runs first)
 - Prompts user for script 09 (Extras)
 - Sources `scripts/common.sh` for shared functions
 - Provides colored output (info, success, warning, error)
@@ -465,9 +465,9 @@ fi
 
 ---
 
-### 10-customization.sh
+### 00-customization.sh
 
-**Purpose**: Visual customization for Zorin OS with dark theme (always installed).
+**Purpose**: Visual customization for Zorin OS with dark theme (always installed, executed first).
 
 **Installs & Configures**:
 
@@ -819,7 +819,7 @@ When helping with this project:
 All core components implemented:
 
 - ✅ Bootstrap orchestration script
-- ✅ All installation scripts (01-08, 10 always; 09 optional)
+- ✅ All installation scripts (00, 01-08 always; 09 optional)
 - ✅ Visual customization (dark theme, fonts, extensions)
 - ✅ Configuration files (.zshrc, .gitconfig, .aliases)
 - ✅ Documentation (README.md, PROJECT.md, IMPROVEMENTS.md)

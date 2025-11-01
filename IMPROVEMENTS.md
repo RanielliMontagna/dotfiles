@@ -18,7 +18,7 @@ Melhorias de alta e média prioridade já implementadas:
 - ✅ Otimização de apt-get (update centralizado)
 - ✅ Validação de arquitetura
 - ✅ Validação de checksums (quando disponível)
-- ✅ **Personalização Visual do Sistema (Tema Dark)** - Script `10-customization.sh` implementado
+- ✅ **Personalização Visual do Sistema (Tema Dark)** - Script `00-customization.sh` implementado
 
 ---
 

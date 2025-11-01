@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ###############################################################################
-# 10-customization.sh
+# 00-customization.sh
 # 
 # Visual customization for Zorin OS (GNOME-based)
 # - Zorin OS native dark theme (built-in dark mode)
@@ -497,114 +497,230 @@ install_gnome_extensions() {
 # Configure System Extensions (Clipboard, System Monitor, etc.)
 ###############################################################################
 
+# Install extension from ZIP file
+install_extension_from_zip() {
+    local extension_uuid="$1"
+    local download_url="$2"
+    local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+    local extension_dir="$extensions_dir/$extension_uuid"
+    
+    # Skip if already installed
+    if [[ -d "$extension_dir" ]]; then
+        print_info "Extension $extension_uuid already installed"
+        return 0
+    fi
+    
+    print_info "Installing extension: $extension_uuid..."
+    
+    # Create extensions directory
+    mkdir -p "$extensions_dir"
+    
+    # Download extension ZIP
+    local zip_file="/tmp/${extension_uuid}.zip"
+    if command -v safe_curl_download_with_cache &> /dev/null; then
+        if ! safe_curl_download_with_cache "$download_url" "$zip_file" 3 120 30; then
+            print_warning "Failed to download extension $extension_uuid"
+            return 1
+        fi
+    else
+        if ! curl -fsSL --max-time 120 --connect-timeout 30 --retry 3 -o "$zip_file" "$download_url"; then
+            print_warning "Failed to download extension $extension_uuid"
+            return 1
+        fi
+    fi
+    
+    # Extract extension
+    if command -v unzip &> /dev/null; then
+        mkdir -p "$extension_dir"
+        if unzip -q -o "$zip_file" -d "$extension_dir" 2>/dev/null; then
+            # Check if files were extracted to a subdirectory
+            if [[ -d "$extension_dir/${extension_uuid}" ]]; then
+                mv "$extension_dir/${extension_uuid}"/* "$extension_dir/" 2>/dev/null || true
+                rmdir "$extension_dir/${extension_uuid}" 2>/dev/null || true
+            fi
+            rm -f "$zip_file"
+            print_success "Extension $extension_uuid extracted"
+            return 0
+        else
+            rm -f "$zip_file"
+            print_warning "Failed to extract extension $extension_uuid"
+            return 1
+        fi
+    else
+        rm -f "$zip_file"
+        print_warning "unzip not available, cannot extract extension"
+        return 1
+    fi
+}
+
+# Enable extension via gnome-extensions or dconf
+enable_extension() {
+    local extension_uuid="$1"
+    
+    # First check if extension is installed
+    local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+    if [[ ! -d "$extensions_dir/$extension_uuid" ]]; then
+        print_warning "Extension $extension_uuid not found in $extensions_dir"
+        return 1
+    fi
+    
+    # Try to enable via gnome-extensions command first
+    if command -v gnome-extensions &> /dev/null; then
+        if gnome-extensions enable "$extension_uuid" 2>/dev/null; then
+            print_success "Extension $extension_uuid enabled"
+            return 0
+        fi
+    fi
+    
+    # Fallback: enable via dconf
+    if command -v dconf &> /dev/null; then
+        # Read current enabled extensions
+        local current_list
+        current_list=$(dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || echo "[]")
+        
+        # Check if already enabled
+        if echo "$current_list" | grep -q "$extension_uuid"; then
+            print_info "Extension $extension_uuid already enabled"
+            return 0
+        fi
+        
+        # Add extension to list
+        # Handle empty list case
+        if [[ "$current_list" == "[]" ]] || [[ -z "$current_list" ]]; then
+            dconf write /org/gnome/shell/enabled-extensions "['$extension_uuid']" 2>/dev/null || true
+        else
+            # Remove brackets and quotes, add new extension, then reformat
+            local clean_list
+            clean_list=$(echo "$current_list" | sed "s/^\[//; s/\]$//; s/'//g")
+            local new_list="['$clean_list','$extension_uuid']"
+            new_list=$(echo "$new_list" | sed "s/','/', '/g")  # Fix spacing
+            dconf write /org/gnome/shell/enabled-extensions "$new_list" 2>/dev/null || true
+        fi
+        
+        print_success "Extension $extension_uuid enabled via dconf"
+        return 0
+    fi
+    
+    print_warning "Could not enable extension $extension_uuid automatically"
+    print_info "You may need to enable it manually via Extension Manager"
+    return 1
+}
+
 configure_system_extensions() {
     if ! is_gnome; then
         return 0
     fi
     
-    print_info "Setting up system extensions configuration..."
-    
-    # List of useful extensions with their UUIDs and installation methods
-    # These will be installed via Extension Manager or manual instructions
-    
-    print_info "Recommended extensions for system monitoring:"
-    print_info ""
-    print_info "📋 Clipboard Indicator"
-    print_info "   UUID: clipboard-indicator@tudmotu.com"
-    print_info "   URL: https://extensions.gnome.org/extension/779/clipboard-indicator/"
-    print_info ""
-    print_info "📊 Vitals (Temperature, CPU, Memory, Network)"
-    print_info "   UUID: Vitals@CoreCoding.com"
-    print_info "   URL: https://extensions.gnome.org/extension/1460/vitals/"
-    print_info ""
-    print_info "🌡️  Freon (Temperature Monitoring)"
-    print_info "   UUID: freon@UshakovVasilii_Github.yahoo.com"
-    print_info "   URL: https://extensions.gnome.org/extension/841/freon/"
-    print_info ""
-    print_info "💻 System Monitor"
-    print_info "   UUID: system-monitor@paradoxxx.zero.gmail.com"
-    print_info "   URL: https://extensions.gnome.org/extension/450/system-monitor/"
-    print_info ""
+    print_info "Setting up system extensions..."
     
     # Install Extension Manager if not available
     if ! command -v extension-manager &> /dev/null && ! is_installed "gnome-shell-extension-manager"; then
-        print_info "Installing Extension Manager for easier extension installation..."
+        print_info "Installing Extension Manager..."
         ensure_apt_updated
         sudo apt-get install -y gnome-shell-extension-manager 2>/dev/null || true
     fi
     
-    # Try to install extensions via gnome-extensions if available
-    if command -v gnome-extensions &> /dev/null; then
-        local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
-        mkdir -p "$extensions_dir"
-        
-        # Check GNOME Shell version for compatibility
-        local gnome_version
-        gnome_version=$(gnome-shell --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "44")
-        
-        print_info "GNOME Shell version detected: $gnome_version"
-        print_info "Attempting to install extensions..."
-        
-        # Note: Direct installation requires downloading extension files
-        # For now, we'll provide instructions and try to enable if already installed
-        print_info ""
-        print_info "📥 Quick Installation via Extension Manager:"
-        print_info "  1. Open Extension Manager (search 'Extensions' in Activities)"
-        print_info "  2. Browse and install:"
-        print_info "     - 'Clipboard Indicator' by Tudmotu"
-        print_info "     - 'Vitals' by CoreCoding (recommended - shows all metrics)"
-        print_info ""
-    else
-        print_info ""
-        print_info "To install these extensions:"
-        print_info "  1. Open Extension Manager (if installed) from Activities"
-        print_info "  2. Or visit https://extensions.gnome.org"
-        print_info "  3. Install 'GNOME Shell Integration' browser extension first"
-        print_info "  4. Then click 'ON' on the extension pages to install"
+    # Get GNOME Shell version for extension compatibility
+    local gnome_version
+    gnome_version=$(gnome-shell --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "44")
+    local major_version="${gnome_version%%.*}"
+    
+    print_info "GNOME Shell version: $gnome_version (major: $major_version)"
+    
+    # Ensure unzip is available
+    if ! command -v unzip &> /dev/null; then
+        print_info "Installing unzip for extension extraction..."
+        ensure_apt_updated
+        sudo apt-get install -y unzip 2>/dev/null || true
     fi
     
-    # Configure extensions if Extension Manager is available
-    if command -v gnome-extensions &> /dev/null; then
-        print_info "Checking installed extensions..."
+    # Function to get latest extension download URL from extensions.gnome.org
+    get_extension_download_url() {
+        local extension_id="$1"
+        local gnome_version="$2"
         
-        # Enable User Themes extension if installed (needed for custom shell themes)
-        if gnome-extensions list 2>/dev/null | grep -q "user-theme"; then
-            gnome-extensions enable user-theme@gnome-shell-extensions.gcampax.github.com 2>/dev/null || \
-            gnome-extensions enable user-theme@gnome-shell-extensions.gcampax.github.com 2>/dev/null || true
-            print_success "User Themes extension enabled (allows custom shell themes)"
+        # Try to get download URL from extensions.gnome.org API
+        local api_url="https://extensions.gnome.org/extension-info/?pk=${extension_id}&shell_version=${gnome_version}"
+        local download_url
+        download_url=$(curl -s "$api_url" 2>/dev/null | grep -o '"download_url":"[^"]*' | cut -d'"' -f4 || echo "")
+        
+        if [[ -n "$download_url" ]] && [[ "$download_url" != "null" ]]; then
+            echo "https://extensions.gnome.org${download_url}"
+            return 0
         fi
         
-        # Enable clipboard indicator if installed
-        if gnome-extensions list 2>/dev/null | grep -q "clipboard-indicator"; then
-            gnome-extensions enable clipboard-indicator@tudmotu.com 2>/dev/null || true
-            print_success "Clipboard Indicator enabled"
-        fi
+        return 1
+    }
+    
+    # Install Clipboard Indicator
+    print_info "Installing Clipboard Indicator extension..."
+    local clipboard_id="779"  # Extension ID from extensions.gnome.org
+    local clipboard_url
+    clipboard_url=$(get_extension_download_url "$clipboard_id" "$major_version" 2>/dev/null || echo "")
+    
+    # Fallback to direct URL if API fails
+    if [[ -z "$clipboard_url" ]]; then
+        # Try common version URLs
+        clipboard_url="https://extensions.gnome.org/extension-data/clipboard-indicator@tudmotu.com.v47.shell-extension.zip"
+    fi
+    
+    if install_extension_from_zip "clipboard-indicator@tudmotu.com" "$clipboard_url"; then
+        enable_extension "clipboard-indicator@tudmotu.com"
+    else
+        print_warning "Could not install Clipboard Indicator automatically"
+        print_info "You can install it manually via Extension Manager or visit:"
+        print_info "  https://extensions.gnome.org/extension/${clipboard_id}/clipboard-indicator/"
+    fi
+    
+    # Install Vitals (most comprehensive - temperature, CPU, memory, network, battery)
+    print_info "Installing Vitals extension..."
+    local vitals_id="1460"  # Extension ID from extensions.gnome.org
+    local vitals_url
+    vitals_url=$(get_extension_download_url "$vitals_id" "$major_version" 2>/dev/null || echo "")
+    
+    # Fallback to direct URL if API fails
+    if [[ -z "$vitals_url" ]]; then
+        # Try common version URLs
+        vitals_url="https://extensions.gnome.org/extension-data/vitals@CoreCoding.com.v85.shell-extension.zip"
+    fi
+    
+    if install_extension_from_zip "Vitals@CoreCoding.com" "$vitals_url"; then
+        enable_extension "Vitals@CoreCoding.com"
         
-        # Enable Vitals if installed
-        if gnome-extensions list 2>/dev/null | grep -q "Vitals"; then
-            gnome-extensions enable Vitals@CoreCoding.com 2>/dev/null || true
-            print_success "Vitals enabled"
-            
-            # Configure Vitals to show temperature, CPU, memory, network
-            if command -v dconf &> /dev/null; then
-                dconf write /org/gnome/shell/extensions/vitals/show-temperature "true" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-voltage "false" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-fan "false" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-frequency "false" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-memory "true" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-cpu "true" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-network "true" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-disk "false" 2>/dev/null || true
-                dconf write /org/gnome/shell/extensions/vitals/show-battery "true" 2>/dev/null || true
-                print_success "Vitals configured (temperature, CPU, memory, network, battery)"
-            fi
+        # Configure Vitals to show temperature, CPU, memory, network, battery
+        if command -v dconf &> /dev/null; then
+            print_info "Configuring Vitals settings..."
+            dconf write /org/gnome/shell/extensions/vitals/show-temperature "true" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-voltage "false" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-fan "false" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-frequency "false" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-memory "true" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-cpu "true" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-network "true" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-disk "false" 2>/dev/null || true
+            dconf write /org/gnome/shell/extensions/vitals/show-battery "true" 2>/dev/null || true
+            print_success "Vitals configured (temperature, CPU, memory, network, battery)"
         fi
+    else
+        print_warning "Could not install Vitals automatically"
+        print_info "You can install it manually via Extension Manager"
+    fi
+    
+    # Refresh GNOME Shell to load extensions
+    if command -v busctl &> /dev/null; then
+        print_info "Refreshing GNOME Shell to load extensions..."
+        busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting GNOME Shell...")' 2>/dev/null || true
     fi
     
     print_info ""
-    print_info "💡 Tip: After installing extensions, restart GNOME Shell:"
-    print_info "   Press Alt+F2, type 'r' and press Enter"
-    print_info "   Or log out and log back in"
+    print_info "📋 Extensions installed and enabled:"
+    print_info "   - Clipboard Indicator (clipboard icon in top bar)"
+    print_info "   - Vitals (temperature, CPU, memory, network, battery in top bar)"
+    print_info ""
+    print_info "💡 If extensions don't appear:"
+    print_info "   1. Press Alt+F2, type 'r' and press Enter (restart GNOME Shell)"
+    print_info "   2. Or log out and log back in"
+    print_info "   3. Or check Extension Manager to see if they're enabled"
 }
 
 ###############################################################################
