@@ -48,54 +48,80 @@ main() {
     fi
     
     # Cursor
-    if command -v cursor &> /dev/null; then
+    if command -v cursor &> /dev/null || dpkg -l 2>/dev/null | grep -q "^ii.*cursor"; then
         print_info "Cursor already installed ($(cursor --version 2>/dev/null || echo 'installed'))"
     else
         print_info "Installing Cursor..."
         
         # Get architecture
         ARCH=$(dpkg --print-architecture)
-        
-        # Cursor provides .deb packages for amd64, arm64, armhf
-        # The downloader redirects to the latest version
         CURSOR_TEMP="/tmp/cursor.deb"
         
         print_info "Downloading Cursor for ${ARCH}..."
         
-        # Download Cursor .deb package
-        # The downloader.cursor.sh/linux/deb endpoint redirects to the latest .deb
-        if curl -L -f -o "$CURSOR_TEMP" "https://downloader.cursor.sh/linux/deb" 2>/dev/null; then
-            print_info "Installing Cursor package..."
-            sudo dpkg -i "$CURSOR_TEMP" 2>/dev/null || {
-                # If dependencies are missing, install them
-                sudo apt-get install -f -y
-                sudo dpkg -i "$CURSOR_TEMP"
-            }
+        # Try to download Cursor .deb package
+        # The official downloader endpoint redirects to the latest .deb file
+        DOWNLOADED=false
+        
+        # Method 1: Try the official downloader endpoint (most common)
+        if curl -L --progress-bar --fail -o "$CURSOR_TEMP" "https://downloader.cursor.sh/linux/deb" 2>/dev/null; then
+            # Verify it's a valid file (at least 1MB, which is reasonable for a .deb)
+            if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]; then
+                DOWNLOADED=true
+            fi
+        fi
+        
+        # Method 2: If first method failed, try direct architecture-specific URL
+        if [[ "$DOWNLOADED" == "false" ]] && [[ "$ARCH" == "amd64" ]]; then
+            print_info "Trying alternative download URL..."
             rm -f "$CURSOR_TEMP"
-            print_success "Cursor installed"
-        else
-            print_warning "Automatic download failed. Trying alternative method..."
-            
-            # Alternative: Try to get direct download link
-            # Check if we can determine the latest version
-            if curl -L -f -o "$CURSOR_TEMP" "https://downloader.cursor.sh/linux/appImage/x64" 2>/dev/null || \
-               curl -L -f -o "$CURSOR_TEMP" "https://downloader.cursor.sh/linux/x64" 2>/dev/null; then
-                print_info "Installing downloaded Cursor..."
-                if file "$CURSOR_TEMP" | grep -q "Debian binary package"; then
-                    sudo dpkg -i "$CURSOR_TEMP" || sudo apt-get install -f -y
+            if curl -L --progress-bar --fail -o "$CURSOR_TEMP" "https://downloader.cursor.sh/linux/appImage/x64" 2>/dev/null; then
+                # Check if file is a .deb (AppImage endpoint might return .deb or .AppImage)
+                if [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]] && (file "$CURSOR_TEMP" 2>/dev/null | grep -q "Debian" || [[ $(stat -f%z "$CURSOR_TEMP" 2>/dev/null || stat -c%s "$CURSOR_TEMP" 2>/dev/null || echo 0) -gt 1048576 ]]); then
+                    DOWNLOADED=true
+                else
+                    # If it's an AppImage, we can't use it here, remove it
                     rm -f "$CURSOR_TEMP"
-                    print_success "Cursor installed"
+                fi
+            fi
+        fi
+        
+        # Install if download succeeded
+        if [[ "$DOWNLOADED" == "true" ]] && [[ -f "$CURSOR_TEMP" ]] && [[ -s "$CURSOR_TEMP" ]]; then
+            print_info "Installing Cursor package..."
+            # Install with dependency resolution
+            if sudo dpkg -i "$CURSOR_TEMP" 2>&1; then
+                rm -f "$CURSOR_TEMP"
+                print_success "Cursor installed successfully"
+            else
+                # Install dependencies and retry
+                print_info "Installing missing dependencies..."
+                sudo apt-get install -f -y
+                if sudo dpkg -i "$CURSOR_TEMP" 2>&1; then
+                    rm -f "$CURSOR_TEMP"
+                    print_success "Cursor installed successfully"
                 else
                     rm -f "$CURSOR_TEMP"
-                    print_warning "Downloaded file is not a valid .deb package"
-                    print_info "Please install Cursor manually from https://cursor.com"
-                    print_info "After installation, run this script again to verify"
+                    print_warning "Failed to install Cursor package"
+                    print_info "Please install Cursor manually from https://cursor.com/download"
                 fi
-            else
-                print_warning "Could not download Cursor automatically"
-                print_info "Please download and install Cursor manually from: https://cursor.com"
-                print_info "After manual installation, run this script again to verify"
             fi
+            
+            # Verify installation
+            sleep 1
+            if ! command -v cursor &> /dev/null && ! dpkg -l 2>/dev/null | grep -q "^ii.*cursor"; then
+                print_warning "Cursor package installed but command may not be in PATH yet"
+                print_info "Try logging out and back in, or restart your terminal"
+            fi
+        else
+            rm -f "$CURSOR_TEMP"
+            print_warning "Could not download Cursor automatically"
+            print_info "Please download and install Cursor manually:"
+            print_info "  1. Visit https://cursor.com/download"
+            print_info "  2. Download the .deb package for Linux"
+            print_info "  3. Run: sudo dpkg -i cursor.deb"
+            print_info "  4. If dependencies are missing: sudo apt-get install -f -y"
+            print_info "After manual installation, run this script again to verify"
         fi
     fi
     
