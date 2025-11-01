@@ -231,6 +231,9 @@ main() {
     print_header "🌐 Installing Applications"
     bash "$SCRIPTS_DIR/08-applications.sh"
     
+    print_header "🎨 Visual Customization (Dark Theme)"
+    bash "$SCRIPTS_DIR/10-customization.sh"
+    
     print_header "🔧 Installing Extra Tools"
     read -p "Install extra development tools? (y/N) " -n 1 -r
     echo
