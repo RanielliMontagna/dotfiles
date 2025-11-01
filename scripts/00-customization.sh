@@ -1018,6 +1018,11 @@ configure_system_extensions() {
         print_info "Caffeine is now active - screen won't lock automatically"
     fi
     
+    # Install Dash to Panel (combines dash and top panel into single panel)
+    if install_and_enable_extension "Dash to Panel" "1160" "dash-to-panel@jderose9.github.com"; then
+        print_info "Dash to Panel is now active - dash and top panel combined"
+    fi
+    
     # Install Vitals (system monitoring - temperature, CPU, memory, network, battery)
     if install_and_enable_extension "Vitals" "1460" "Vitals@CoreCoding.com"; then
         # Configure Vitals to show temperature, CPU, memory, network, battery
@@ -1047,6 +1052,7 @@ configure_system_extensions() {
     print_info "   - Clipboard Indicator (clipboard icon in top bar)"
     print_info "   - Blur My Shell (blur effects on panels and overview)"
     print_info "   - Caffeine (prevents screen lock/sleep)"
+    print_info "   - Dash to Panel (combines dash and top panel)"
     print_info "   - Vitals (temperature, CPU, memory, network, battery in top bar)"
     print_info ""
     print_info "💡 If extensions don't appear:"
