@@ -647,30 +647,29 @@ install_extension_via_manager() {
     local extension_uuid="$1"
     local extension_id="$2"
     
-    # Try extension-manager CLI (if available)
-    if command -v extension-manager &> /dev/null; then
-        print_info "Trying to install via Extension Manager CLI..."
-        # Extension Manager may support install via ID
-        if extension-manager install "$extension_id" 2>/dev/null; then
-            sleep 2
-            if [[ -d "$HOME/.local/share/gnome-shell/extensions/$extension_uuid" ]]; then
-                return 0
-            fi
-        fi
-    fi
-    
-    # Try gnome-extensions-cli (if available via pip)
-    if command -v gnome-extensions-cli &> /dev/null; then
-        print_info "Trying to install via gnome-extensions-cli..."
-        if gnome-extensions-cli install "$extension_uuid" 2>/dev/null; then
-            sleep 2
-            if [[ -d "$HOME/.local/share/gnome-shell/extensions/$extension_uuid" ]]; then
-                return 0
-            fi
-        fi
-    fi
-    
+    # Skip CLI installation for now - Extension Manager CLI may hang or require user interaction
+    # The ZIP download method is more reliable and faster
     return 1
+    
+    # Note: Keeping this function for future use, but disabled for now
+    # Extension Manager CLI commands can hang or require GUI interaction
+    # if command -v extension-manager &> /dev/null; then
+    #     print_info "Trying to install via Extension Manager CLI..."
+    #     timeout 10 extension-manager install "$extension_id" 2>/dev/null || true
+    #     sleep 1
+    #     if [[ -d "$HOME/.local/share/gnome-shell/extensions/$extension_uuid" ]]; then
+    #         return 0
+    #     fi
+    # fi
+    #
+    # if command -v gnome-extensions-cli &> /dev/null; then
+    #     print_info "Trying to install via gnome-extensions-cli..."
+    #     timeout 10 gnome-extensions-cli install "$extension_uuid" 2>/dev/null || true
+    #     sleep 1
+    #     if [[ -d "$HOME/.local/share/gnome-shell/extensions/$extension_uuid" ]]; then
+    #         return 0
+    #     fi
+    # fi
 }
 
 configure_system_extensions() {
