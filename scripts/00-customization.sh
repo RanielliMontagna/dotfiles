@@ -446,6 +446,70 @@ configure_gnome_appearance() {
 }
 
 ###############################################################################
+# Configure Power Settings (Disable Auto Suspend/Hibernate)
+###############################################################################
+
+configure_power_settings() {
+    if ! is_gnome; then
+        print_warning "Not running in GNOME environment, skipping power settings configuration"
+        return 0
+    fi
+    
+    print_info "Configuring power settings (disabling auto suspend/hibernate)..."
+    
+    # Configure GNOME power settings via gsettings
+    # Disable automatic suspend when on AC power (plugged in)
+    print_info "Disabling automatic suspend when on AC power..."
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-ac-type" "'nothing'" || \
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-ac-type" "nothing" || true
+    
+    # Disable automatic suspend when on battery
+    print_info "Disabling automatic suspend when on battery..."
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-battery-type" "'nothing'" || \
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-battery-type" "nothing" || true
+    
+    # Set sleep timeout to never (0 = never) for AC power
+    print_info "Setting sleep timeout to never for AC power..."
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-ac-timeout" "0" || true
+    
+    # Set sleep timeout to never for battery
+    print_info "Setting sleep timeout to never for battery..."
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-battery-timeout" "0" || true
+    
+    # Also configure via dconf (more reliable)
+    if command -v dconf &> /dev/null; then
+        print_info "Configuring power settings via dconf..."
+        
+        # Disable suspend on AC
+        dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'nothing'" 2>/dev/null || true
+        dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-timeout "0" 2>/dev/null || true
+        
+        # Disable suspend on battery
+        dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'nothing'" 2>/dev/null || true
+        dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-timeout "0" 2>/dev/null || true
+        
+        # Disable automatic screen blank
+        dconf write /org/gnome/settings-daemon/plugins/power/idle-dim "false" 2>/dev/null || true
+        
+        print_success "Power settings configured via dconf"
+    fi
+    
+    # Try to disable systemd suspend/hibernate targets (if running as root or with sudo)
+    # Note: This requires sudo, but we'll try it non-destructively
+    if command -v systemctl &> /dev/null; then
+        print_info "Configuring systemd power management..."
+        
+        # Try to disable suspend and hibernate (non-destructively - won't fail if no permissions)
+        sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target 2>/dev/null || true
+        
+        print_info "Systemd power management configured (if permissions allowed)"
+    fi
+    
+    print_success "Power settings configured - auto suspend/hibernate disabled"
+    print_info "Note: Screen lock can still be triggered manually or via Caffeine extension"
+}
+
+###############################################################################
 # Configure GNOME Terminal Dark Profile
 ###############################################################################
 
@@ -1371,6 +1435,7 @@ main() {
     # Configure GNOME appearance (only if running in GNOME)
     if is_gnome; then
         configure_gnome_appearance
+        configure_power_settings
         configure_terminal_profile
         configure_wallpaper
         install_gnome_extensions

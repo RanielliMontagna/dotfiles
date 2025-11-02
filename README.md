@@ -144,6 +144,10 @@ DOTFILES_BRANCH=feat/visual-customization curl -fsSL https://raw.githubuserconte
   - JetBrains Mono (monospace for terminal/editors)
 - **Wallpaper**: Automatic dark wallpaper configuration
 - **GNOME Terminal**: Pre-configured dark profile with Nord theme colors
+- **Power Settings**: Automatic configuration to prevent hibernation
+  - Disables automatic suspend/hibernate (both on AC power and battery)
+  - Sets sleep timeout to never
+  - Configures systemd power management
 - **GNOME Extensions**: Automatically installs and enables:
   - Clipboard Indicator (clipboard manager)
   - Blur My Shell (blur effects)

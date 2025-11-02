@@ -40,6 +40,7 @@ Melhorias de alta e média prioridade já implementadas:
 - ✅ **Wallpaper**: Configura automaticamente wallpaper dark de `assets/wallpapers/background.jpg`
 - ✅ **Cores de acento**: Configura color-scheme prefer-dark para aplicações GTK
 - ✅ **Zorin OS específico**: Configura temas específicos do Zorin OS usando modo dark nativo
+- ✅ **Configuração de energia**: Desabilita hibernação automática (suspend/hibernate) tanto em AC quanto bateria
 
 #### 🖥️ Terminal e Shell
 

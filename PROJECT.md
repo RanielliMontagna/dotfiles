@@ -486,6 +486,11 @@ fi
   - Sets fonts (Inter for interface, JetBrains Mono for monospace)
   - Configures Zorin OS specific dark theme settings
   - Configures Nautilus (file manager) and Gedit to use dark theme
+- **Power Settings**:
+  - Disables automatic suspend/hibernate when on AC power (plugged in)
+  - Disables automatic suspend/hibernate when on battery
+  - Sets sleep timeout to never (0 = never)
+  - Configures systemd to mask suspend/hibernate targets
 - **GNOME Terminal**:
   - Creates dark profile with Nord theme colors
   - Configures background, foreground, cursor, and palette colors
