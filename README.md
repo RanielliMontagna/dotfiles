@@ -11,7 +11,7 @@ Automated setup for a fresh **Zorin OS** machine. Run **one command** after inst
 - 🐧 **Zorin/Ubuntu friendly** - Optimized for Ubuntu-based distributions
 - 🔁 **Idempotent** - Safe to run multiple times without breaking anything
 - 🧰 **Essential tools** - Git, curl, build-essential, modern CLI tools (ripgrep, bat, fzf)
-- 🐚 **Modern shell** - Zsh + Oh My Zsh + Powerlevel10k theme + useful plugins
+- 🐚 **Modern shell** - Zsh + Oh My Zsh + Starship prompt + useful plugins
 - � **Node.js LTS** - Via NVM with global packages (TypeScript)
 - 📝 **Code editors** - VS Code and Cursor (always installed)
 - 🐳 **Docker** - Latest stable from official repository (always installed)
@@ -44,14 +44,24 @@ cd dotfiles
 bash bootstrap.sh
 ```
 
+> 💡 **Tip**: The bootstrap script will show an interactive menu where you can select which components to install. By default, all essential components (00-08) are selected.
+
 ### Method 2: One-Line Install
 
 ```bash
-# Download and run directly (be careful with this approach!)
+# Download and run directly - all scripts will be downloaded automatically
 curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/bootstrap.sh | bash
 ```
 
-> ⚠️ **Note**: Always review scripts before running them on your system!
+Or for a specific branch:
+
+```bash
+DOTFILES_BRANCH=feat/visual-customization curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/feat/visual-customization/bootstrap.sh | bash
+```
+
+> ✅ **Note**: When run via curl, the bootstrap script automatically downloads all required scripts from GitHub. No need to clone the repository first!
+>
+> ⚠️ **Security**: Always review scripts before running them on your system!
 
 ---
 
@@ -75,7 +85,8 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
   - zsh-autosuggestions (command suggestions)
   - zsh-syntax-highlighting (real-time syntax check)
   - git, docker, node (completions and helpers)
-- **Theme**: Powerlevel10k (beautiful and informative prompt)
+- **Prompt**: Starship (minimal, blazing-fast, and infinitely customizable prompt written in Rust)
+- **Nerd Font**: Meslo Nerd Font (installed automatically for Starship icons to display correctly)
 
 ### Node.js (Always Installed)
 
@@ -127,15 +138,23 @@ curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/main/boot
 ### Visual Customization (Always Installed)
 
 - **Dark Theme**: Complete dark theme setup for Zorin OS/GNOME
-  - GTK themes: Adwaita Dark, Arc Dark, Yaru Dark
-  - Icon themes: Papirus Dark
+  - Uses Zorin OS native dark theme (automatically via `color-scheme: prefer-dark`)
   - System-wide dark color scheme
 - **Custom Fonts**:
   - Inter (modern interface font)
   - JetBrains Mono (monospace for terminal/editors)
 - **Wallpaper**: Automatic dark wallpaper configuration
 - **GNOME Terminal**: Pre-configured dark profile with Nord theme colors
-- **GNOME Extensions**: Extension Manager + system monitoring setup (Vitals, Clipboard Indicator)
+- **Power Settings**: Automatic configuration to prevent hibernation
+  - Disables automatic suspend/hibernate (both on AC power and battery)
+  - Sets sleep timeout to never
+  - Configures systemd power management
+- **GNOME Extensions**: Automatically installs and enables:
+  - Clipboard Indicator (clipboard manager)
+  - Blur My Shell (blur effects)
+  - Caffeine (prevents screen lock)
+  - Dash to Panel (combines dash and top panel, configured with 32px thickness)
+  - Vitals (system monitoring: CPU, memory, temperature, network, battery)
 
 ### Extra Tools (Optional)
 
@@ -224,15 +243,36 @@ Personal projects in `~/www/personal/` are already configured with:
 
 If you need to add work projects later, you can create a new config file (e.g., `~/.gitconfig-work`) and add an `includeIf` entry in `~/.gitconfig` pointing to it.
 
-### 3. Powerlevel10k Theme
+### 3. Starship Prompt
 
-Powerlevel10k is already pre-configured and ready to use! The prompt will work immediately after restarting your terminal.
+Starship is already installed and configured with the **Nerd Font Symbols** preset! The prompt will work immediately after restarting your terminal.
 
-To customize it later, run:
+**Important**: For all icons to display correctly, make sure your terminal is using a Nerd Font:
+
+- The script automatically installs **Meslo Nerd Font**
+- Configure your terminal to use "MesloLGS NF" or any other Nerd Font
+- In GNOME Terminal: Preferences > Profiles > Text > Custom font → Select "MesloLGS NF Regular" or "Meslo Nerd Font"
+
+Starship is a minimal, blazing-fast, and infinitely customizable prompt that works with any shell.
+
+**Available presets** (from https://starship.rs/presets/):
 
 ```bash
-p10k configure
+# Apply different presets
+starship preset nerd-font-symbols > ~/.config/starship.toml  # Nerd Font icons (default)
+starship preset no-nerd-font > ~/.config/starship.toml        # No Nerd Font required
+starship preset pure-prompt > ~/.config/starship.toml         # Pure prompt style
+starship preset tokyo-night > ~/.config/starship.toml         # Tokyo Night theme
+# ... and more!
 ```
+
+To customize Starship manually:
+
+```bash
+nano ~/.config/starship.toml
+```
+
+For more customization options, visit: https://starship.rs/config/
 
 ### 4. (Optional) Authenticate GitHub CLI
 
@@ -336,7 +376,9 @@ omz update
 # Update plugins manually
 cd ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions && git pull
 cd ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting && git pull
-cd ~/.oh-my-zsh/custom/themes/powerlevel10k && git pull
+
+# Update Starship
+curl -fsSL https://starship.rs/install.sh | sh
 ```
 
 ### Update Docker
@@ -481,14 +523,16 @@ cd dotfiles
 bash bootstrap.sh
 ```
 
-**Method 3: One-Line Install from Branch (Testing Only)**
+**Method 3: One-Line Install from Branch**
 
 ```bash
-# Download and run bootstrap.sh from a specific branch
-curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/fix/minor-adjustments/bootstrap.sh | bash
+# All scripts will be downloaded automatically from the specified branch
+DOTFILES_BRANCH=feat/visual-customization curl -fsSL https://raw.githubusercontent.com/RanielliMontagna/dotfiles/feat/visual-customization/bootstrap.sh | bash
 ```
 
-> ⚠️ **Warning**: Always review the code before running scripts from untested branches!
+> ✅ Works the same as Method 2 - all scripts are downloaded automatically!
+>
+> ⚠️ **Security**: Always review the code before running scripts from untested branches!
 
 ---
 
@@ -609,7 +653,7 @@ MIT - Use freely, modify as needed.
 Built with these amazing tools:
 
 - [Oh My Zsh](https://ohmyz.sh/)
-- [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
+- [Starship](https://starship.rs/) - The minimal, blazing-fast, and infinitely customizable prompt
 - [NVM](https://github.com/nvm-sh/nvm)
 - [SDKMAN](https://sdkman.io/)
 - [Docker](https://www.docker.com/)

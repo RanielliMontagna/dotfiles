@@ -237,9 +237,15 @@ main() {
             chmod +x "$NORDVPN_INSTALLER" 2>/dev/null || true
             
             # Run installer with better error handling
-            print_info "Running NordVPN installer..."
-            if bash "$NORDVPN_INSTALLER" 2>&1; then
+            # Use DEBIAN_FRONTEND=noninteractive to avoid prompts
+            print_info "Running NordVPN installer (non-interactive)..."
+            if DEBIAN_FRONTEND=noninteractive bash "$NORDVPN_INSTALLER" 2>&1; then
                 # Wait a moment for installation to complete
+                sleep 3
+                
+                # The installer script should have added the repository and installed nordvpn
+                # But if it didn't complete, try installing manually
+                print_info "Verifying NordVPN installation..."
                 sleep 3
                 
                 # Verify installation
@@ -249,14 +255,34 @@ main() {
                     print_info "To connect, run: nordvpn connect"
                     print_warning "Note: You may need to log out and back in for NordVPN to work properly"
                 else
-                    # Check if package was installed but command not in PATH
-                    sleep 2
-                    if command -v nordvpn &> /dev/null || is_installed "nordvpn"; then
-                        print_success "NordVPN package installed (may need logout/login to activate)"
-                        print_info "To login to NordVPN, run: nordvpn login"
+                    # Check if repository was added and try manual installation
+                    if [[ -f /etc/apt/sources.list.d/nordvpn.list ]] || [[ -d /etc/apt/sources.list.d ]] && ls /etc/apt/sources.list.d/*nord* 2>/dev/null; then
+                        print_info "NordVPN repository found, attempting to install package manually..."
+                        if command -v ensure_apt_updated &> /dev/null; then
+                            ensure_apt_updated true
+                        else
+                            DEBIAN_FRONTEND=noninteractive sudo apt-get update -qq || true
+                        fi
+                        # Install nordvpn package with non-interactive flags
+                        if DEBIAN_FRONTEND=noninteractive sudo apt-get install -y nordvpn 2>/dev/null; then
+                            print_success "NordVPN installed via apt-get"
+                            print_info "To login to NordVPN, run: nordvpn login"
+                            print_info "To connect, run: nordvpn connect"
+                        else
+                            print_warning "Could not install nordvpn package automatically"
+                            print_info "The repository may have been added. Try manually:"
+                            print_info "  sudo apt-get update"
+                            print_info "  sudo apt-get install -y nordvpn"
+                        fi
                     else
-                        print_warning "NordVPN installation completed but nordvpn command not found"
-                        print_info "This may be normal - try logging out and back in, then run: nordvpn login"
+                        # Check if package was installed but command not in PATH
+                        if is_installed "nordvpn"; then
+                            print_success "NordVPN package installed (may need logout/login to activate)"
+                            print_info "To login to NordVPN, run: nordvpn login"
+                        else
+                            print_warning "NordVPN installation completed but nordvpn command not found"
+                            print_info "This may be normal - try logging out and back in, then run: nordvpn login"
+                        fi
                     fi
                 fi
             else

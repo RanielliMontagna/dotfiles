@@ -211,42 +211,155 @@ configure_gnome_appearance() {
         return 0
     fi
     
-    print_info "Configuring Zorin OS dark theme..."
+    print_info "Configuring Zorin OS 18 dark theme..."
     
-    # Enable dark mode for applications (this is the main setting for Zorin OS)
+    # Try using Zorin Appearance tool if available (most reliable method for Zorin OS)
+    if command -v zorin-appearance &> /dev/null; then
+        print_info "Using Zorin Appearance tool to set dark theme..."
+        # Zorin Appearance can be controlled via dconf
+        # The schema might be org.zorin.desktop.interface or similar
+        # Try to set via dconf first
+        if command -v dconf &> /dev/null; then
+            # Try Zorin-specific paths
+            dconf write /org/zorin/desktop/interface/color-scheme "'dark'" 2>/dev/null || \
+            dconf write /org/zorin/desktop/interface/color-scheme "'prefer-dark'" 2>/dev/null || true
+            
+            # Try to get current Zorin appearance settings
+            local zorin_theme
+            zorin_theme=$(dconf read /org/zorin/desktop/interface/gtk-theme 2>/dev/null | tr -d "'" || echo "")
+            if [[ -n "$zorin_theme" ]] && [[ "$zorin_theme" != *"-dark" ]]; then
+                # Set dark variant
+                local zorin_dark="${zorin_theme%-light}-dark"
+                if [[ -z "$zorin_dark" ]] || [[ "$zorin_dark" == "-dark" ]]; then
+                    zorin_dark="${zorin_theme}-dark"
+                fi
+                if [[ -d "/usr/share/themes/$zorin_dark" ]]; then
+                    dconf write /org/zorin/desktop/interface/gtk-theme "'$zorin_dark'" 2>/dev/null || true
+                    print_success "Zorin dark theme set via dconf: $zorin_dark"
+                fi
+            fi
+        fi
+    fi
+    
+    # Get current theme to detect Zorin theme name
+    local current_theme
+    current_theme=$(get_gnome_setting "org.gnome.desktop.interface" "gtk-theme" 2>/dev/null | tr -d "'" || echo "")
+    print_info "Current GTK theme: $current_theme"
+    
+    # Zorin OS 18 specific: Find and set dark variant directly
+    # This is important because color-scheme alone may not activate the dark theme
+    local dark_theme_applied=false
+    
+    if [[ -n "$current_theme" ]]; then
+        # Remove quotes and detect theme type
+        current_theme=$(echo "$current_theme" | tr -d "'")
+        
+        # If already dark, confirm it
+        if [[ "$current_theme" == *"-dark" ]] || [[ "$current_theme" == *"Dark" ]]; then
+            print_info "Theme already appears to be dark: $current_theme"
+            dark_theme_applied=true
+        else
+            # Try to find dark variant
+            local dark_theme=""
+            
+            # Method 1: Replace -light with -dark
+            if [[ "$current_theme" == *"-light" ]]; then
+                dark_theme="${current_theme%-light}-dark"
+            # Method 2: Try common patterns
+            elif [[ "$current_theme" == *"Light" ]]; then
+                dark_theme="${current_theme%Light}Dark"
+            # Method 3: Add -dark suffix
+            else
+                dark_theme="${current_theme}-dark"
+            fi
+            
+            # Check if dark variant exists
+            if [[ -n "$dark_theme" ]]; then
+                if [[ -d "/usr/share/themes/$dark_theme" ]] || [[ -d "$HOME/.themes/$dark_theme" ]]; then
+                    print_info "Applying dark theme: $dark_theme"
+                    set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'$dark_theme'" || true
+                    if command -v dconf &> /dev/null; then
+                        dconf write /org/gnome/desktop/interface/gtk-theme "'$dark_theme'" 2>/dev/null || true
+                    fi
+                    print_success "Dark theme applied: $dark_theme"
+                    dark_theme_applied=true
+                fi
+            fi
+        fi
+    fi
+    
+    # If dark theme not applied yet, try to find any available dark theme
+    if [[ "$dark_theme_applied" == "false" ]]; then
+        print_info "Searching for available dark themes..."
+        
+        # Check for Yaru dark variants (common in Ubuntu-based systems like Zorin)
+        local yaru_dark_themes=("Yaru-dark" "Yaru-purple-dark" "Yaru-blue-dark" "Yaru-green-dark" "Yaru-red-dark" "Yaru-orange-dark")
+        
+        for theme in "${yaru_dark_themes[@]}"; do
+            if [[ -d "/usr/share/themes/$theme" ]]; then
+                print_info "Found and applying dark theme: $theme"
+                set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'$theme'" || true
+                if command -v dconf &> /dev/null; then
+                    dconf write /org/gnome/desktop/interface/gtk-theme "'$theme'" 2>/dev/null || true
+                fi
+                print_success "Applied dark theme: $theme"
+                dark_theme_applied=true
+                break
+            fi
+        done
+        
+        # If still not found, try Adwaita-dark (usually always available)
+        if [[ "$dark_theme_applied" == "false" ]]; then
+            if [[ -d "/usr/share/themes/Adwaita-dark" ]]; then
+                print_info "Applying Adwaita-dark theme as fallback..."
+                set_gnome_setting "org.gnome.desktop.interface" "gtk-theme" "'Adwaita-dark'" || true
+                if command -v dconf &> /dev/null; then
+                    dconf write /org/gnome/desktop/interface/gtk-theme "'Adwaita-dark'" 2>/dev/null || true
+                fi
+                print_success "Applied Adwaita-dark theme"
+                dark_theme_applied=true
+            fi
+        fi
+    fi
+    
+    # Enable dark mode via color-scheme (GNOME 42+ method - works on Zorin OS 18)
+    print_info "Enabling dark color scheme..."
     set_gnome_setting "org.gnome.desktop.interface" "color-scheme" "'prefer-dark'" || true
     print_success "Dark color scheme enabled"
     
-    # Use Zorin OS native theme (will automatically use dark variant)
-    print_info "Setting Zorin OS native theme..."
-    # Get current theme to see if we need to change it
-    local current_theme
-    current_theme=$(get_gnome_setting "org.gnome.desktop.interface" "gtk-theme" 2>/dev/null || echo "")
-    
-    # If theme is set to a light variant, switch to dark variant
-    if [[ -n "$current_theme" ]]; then
-        print_info "Current theme: $current_theme"
-        # Zorin OS themes typically have -dark variants
-        # But the color-scheme preference should handle this automatically
+    # Also try setting it via dconf (more reliable)
+    if command -v dconf &> /dev/null; then
+        dconf write /org/gnome/desktop/interface/color-scheme "'prefer-dark'" 2>/dev/null || true
     fi
     
-    # For Zorin OS, the color-scheme setting should be sufficient
-    # The system will automatically use the dark variant of the current theme
-    print_success "Zorin OS will use dark theme variant automatically"
-    
-    # Set GNOME Shell theme (for top bar and shell UI)
+    # Set GNOME Shell theme (for top bar and shell UI) - Important for Zorin OS 18
     print_info "Setting GNOME Shell theme to dark..."
     if command -v dconf &> /dev/null; then
-        # Check if User Themes extension is needed for shell theming
-        # For Zorin/GNOME, the shell typically uses the system theme
-        # The color-scheme setting should handle most of it
-        # But we can also try to set shell theme if User Themes extension is installed
+        # Get the GTK theme we just set
+        local applied_gtk_theme
+        applied_gtk_theme=$(get_gnome_setting "org.gnome.desktop.interface" "gtk-theme" 2>/dev/null | tr -d "'" || echo "")
+        
+        # Try to set shell theme to match GTK theme
+        # First try User Themes extension (if installed)
         if gnome-extensions list 2>/dev/null | grep -q "user-theme"; then
-            dconf write /org/gnome/shell/extensions/user-theme/name "'Adwaita-dark'" 2>/dev/null || true
+            if [[ -n "$applied_gtk_theme" ]]; then
+                dconf write /org/gnome/shell/extensions/user-theme/name "'$applied_gtk_theme'" 2>/dev/null || true
+            else
+                dconf write /org/gnome/shell/extensions/user-theme/name "'Adwaita-dark'" 2>/dev/null || true
+            fi
             print_info "User Themes extension detected, shell theme configured"
         fi
-        # Most modern GNOME versions (40+) use color-scheme for shell automatically
-        print_info "Shell theme will follow system color scheme (dark)"
+        
+        # Also try setting shell theme directly (may work in some GNOME versions)
+        # Note: This might not work in all GNOME versions, but worth trying
+        if [[ -n "$applied_gtk_theme" ]]; then
+            # Try Yaru-dark shell theme if available
+            if [[ "$applied_gtk_theme" == *"Yaru"* ]] && [[ -d "/usr/share/gnome-shell/theme/Yaru-dark" ]]; then
+                dconf write /org/gnome/shell/theme/name "'Yaru-dark'" 2>/dev/null || true
+            fi
+        fi
+        
+        print_success "GNOME Shell configured for dark theme"
     fi
     
     # Keep Zorin OS native icon theme (will use dark variant automatically)
@@ -308,7 +421,92 @@ configure_gnome_appearance() {
         set_gnome_setting "org.gnome.desktop.interface" "document-font-name" "'Inter 11'" || true
     fi
     
+    # Final verification: Check if dark theme is actually applied
+    print_info "Verifying dark theme application..."
+    local final_theme
+    final_theme=$(get_gnome_setting "org.gnome.desktop.interface" "gtk-theme" 2>/dev/null | tr -d "'" || echo "")
+    local final_color_scheme
+    final_color_scheme=$(get_gnome_setting "org.gnome.desktop.interface" "color-scheme" 2>/dev/null | tr -d "'" || echo "")
+    
+    if [[ "$final_theme" == *"-dark" ]] || [[ "$final_theme" == *"Dark" ]] || [[ "$final_color_scheme" == "prefer-dark" ]]; then
+        print_success "Dark theme is configured: $final_theme (color-scheme: $final_color_scheme)"
+        print_info "Note: You may need to restart applications or log out/in for changes to fully apply"
+    else
+        print_warning "Dark theme might not be fully applied"
+        print_info "Current theme: $final_theme"
+        print_info "Current color-scheme: $final_color_scheme"
+        print_info ""
+        print_info "To manually enable dark theme in Zorin OS 18:"
+        print_info "  1. Open 'Zorin Appearance' from Applications"
+        print_info "  2. Select 'Dark' in the Appearance tab"
+        print_info "  Or run: gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'"
+    fi
+    
     print_success "GNOME appearance settings configured"
+}
+
+###############################################################################
+# Configure Power Settings (Disable Auto Suspend/Hibernate)
+###############################################################################
+
+configure_power_settings() {
+    if ! is_gnome; then
+        print_warning "Not running in GNOME environment, skipping power settings configuration"
+        return 0
+    fi
+    
+    print_info "Configuring power settings (disabling auto suspend/hibernate)..."
+    
+    # Configure GNOME power settings via gsettings
+    # Disable automatic suspend when on AC power (plugged in)
+    print_info "Disabling automatic suspend when on AC power..."
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-ac-type" "'nothing'" || \
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-ac-type" "nothing" || true
+    
+    # Disable automatic suspend when on battery
+    print_info "Disabling automatic suspend when on battery..."
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-battery-type" "'nothing'" || \
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-battery-type" "nothing" || true
+    
+    # Set sleep timeout to never (0 = never) for AC power
+    print_info "Setting sleep timeout to never for AC power..."
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-ac-timeout" "0" || true
+    
+    # Set sleep timeout to never for battery
+    print_info "Setting sleep timeout to never for battery..."
+    set_gnome_setting "org.gnome.settings-daemon.plugins.power" "sleep-inactive-battery-timeout" "0" || true
+    
+    # Also configure via dconf (more reliable)
+    if command -v dconf &> /dev/null; then
+        print_info "Configuring power settings via dconf..."
+        
+        # Disable suspend on AC
+        dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-type "'nothing'" 2>/dev/null || true
+        dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-ac-timeout "0" 2>/dev/null || true
+        
+        # Disable suspend on battery
+        dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-type "'nothing'" 2>/dev/null || true
+        dconf write /org/gnome/settings-daemon/plugins/power/sleep-inactive-battery-timeout "0" 2>/dev/null || true
+        
+        # Disable automatic screen blank
+        dconf write /org/gnome/settings-daemon/plugins/power/idle-dim "false" 2>/dev/null || true
+        
+        print_success "Power settings configured via dconf"
+    fi
+    
+    # Try to disable systemd suspend/hibernate targets (if running as root or with sudo)
+    # Note: This requires sudo, but we'll try it non-destructively
+    if command -v systemctl &> /dev/null; then
+        print_info "Configuring systemd power management..."
+        
+        # Try to disable suspend and hibernate (non-destructively - won't fail if no permissions)
+        sudo systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target 2>/dev/null || true
+        
+        print_info "Systemd power management configured (if permissions allowed)"
+    fi
+    
+    print_success "Power settings configured - auto suspend/hibernate disabled"
+    print_info "Note: Screen lock can still be triggered manually or via Caffeine extension"
 }
 
 ###############################################################################
@@ -358,8 +556,19 @@ configure_terminal_profile() {
             # Use system theme colors as fallback
             dconf write /org/gnome/terminal/legacy/profiles:/:${profile_id}/use-theme-colors "false" 2>/dev/null || true
             
-            # Font (JetBrains Mono if available)
-            if fc-list | grep -q "JetBrains Mono"; then
+            # Font (prefer Meslo Nerd Font for Starship icons, fallback to JetBrains Mono)
+            if fc-list | grep -qi "Meslo.*Nerd"; then
+                # Try to find Meslo Nerd Font variant (MesloLGS NF is common)
+                local meslo_font
+                meslo_font=$(fc-list | grep -i "Meslo.*Nerd" | head -n1 | cut -d: -f2 | cut -d',' -f1 | sed 's/^[[:space:]]*//' | head -n1 || echo "")
+                if [[ -n "$meslo_font" ]]; then
+                    dconf write /org/gnome/terminal/legacy/profiles:/:${profile_id}/font "'$meslo_font 11'" 2>/dev/null || true
+                    print_info "Using Meslo Nerd Font for terminal (required for Starship icons)"
+                else
+                    # Fallback: try MesloLGS NF directly
+                    dconf write /org/gnome/terminal/legacy/profiles:/:${profile_id}/font "'MesloLGS NF 11'" 2>/dev/null || true
+                fi
+            elif fc-list | grep -q "JetBrains Mono"; then
                 dconf write /org/gnome/terminal/legacy/profiles:/:${profile_id}/font "'JetBrains Mono 11'" 2>/dev/null || true
             fi
             
@@ -494,6 +703,40 @@ install_gnome_extensions() {
 }
 
 ###############################################################################
+# Reload GNOME Shell to load extensions
+###############################################################################
+
+reload_gnome_shell() {
+    # Try multiple methods to reload GNOME Shell
+    local reloaded=false
+    
+    # Method 1: busctl (most reliable for GNOME Shell restart)
+    if command -v busctl &> /dev/null; then
+        if busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting GNOME Shell...")' >/dev/null 2>&1; then
+            reloaded=true
+            sleep 2
+        fi
+    fi
+    
+    # Method 2: dbus-send (alternative method)
+    if [[ "$reloaded" == "false" ]] && command -v dbus-send &> /dev/null; then
+        if dbus-send --session --type=method_call --dest=org.gnome.Shell /org/gnome/Shell org.gnome.Shell.Eval string:'Meta.restart("Restarting...")' >/dev/null 2>&1; then
+            reloaded=true
+            sleep 2
+        fi
+    fi
+    
+    # Method 3: Kill and restart (more aggressive)
+    # Note: This is a fallback but may interrupt user work, so we skip it
+    
+    if [[ "$reloaded" == "true" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+###############################################################################
 # Configure System Extensions (Clipboard, System Monitor, etc.)
 ###############################################################################
 
@@ -578,6 +821,20 @@ install_extension_from_zip() {
             return 1
         fi
         
+        # Verify and fix UUID in metadata.json if needed
+        local metadata_uuid
+        metadata_uuid=$(grep -o '"uuid"[[:space:]]*:[[:space:]]*"[^"]*"' "$extension_dir/metadata.json" 2>/dev/null | sed 's/.*"uuid"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' || echo "")
+        if [[ -n "$metadata_uuid" ]] && [[ "$metadata_uuid" != "$extension_uuid" ]]; then
+            print_info "Fixing UUID in metadata.json: $metadata_uuid -> $extension_uuid"
+            sed -i "s/\"uuid\"[[:space:]]*:[[:space:]]*\"$metadata_uuid\"/\"uuid\": \"$extension_uuid\"/g" "$extension_dir/metadata.json" 2>/dev/null || true
+        fi
+        
+        # Set correct permissions for extension files
+        # Directories should be 755, files should be 644
+        chmod -R u+rwX,go+rX "$extension_dir" 2>/dev/null || true
+        find "$extension_dir" -type d -exec chmod 755 {} \; 2>/dev/null || true
+        find "$extension_dir" -type f -exec chmod 644 {} \; 2>/dev/null || true
+        
         rm -f "$zip_file" 2>/dev/null || true
         print_success "Extension $extension_uuid installed successfully"
         return 0
@@ -600,11 +857,38 @@ enable_extension() {
         return 1
     fi
     
+    # Check shell version compatibility
+    local metadata_file="$extensions_dir/$extension_uuid/metadata.json"
+    if [[ -f "$metadata_file" ]]; then
+        local gnome_version
+        gnome_version=$(gnome-shell --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1 || echo "")
+        if [[ -n "$gnome_version" ]]; then
+            local major_version="${gnome_version%%.*}"
+            # Check if metadata.json has compatible shell-version
+            if ! grep -q "\"$major_version\"" "$metadata_file" 2>/dev/null && ! grep -q "\"${gnome_version}\"" "$metadata_file" 2>/dev/null; then
+                print_warning "Extension $extension_uuid may not be compatible with GNOME Shell $gnome_version"
+                print_info "Checking for compatible versions..."
+            fi
+        fi
+    fi
+    
     # Try to enable via gnome-extensions command first
     if command -v gnome-extensions &> /dev/null; then
+        # First disable and re-enable to ensure clean state
+        gnome-extensions disable "$extension_uuid" 2>/dev/null || true
+        sleep 1
+        
         if gnome-extensions enable "$extension_uuid" 2>/dev/null; then
-            print_success "Extension $extension_uuid enabled"
-            return 0
+            # Verify it's actually enabled and active
+            sleep 2
+            local state
+            state=$(gnome-extensions info "$extension_uuid" 2>/dev/null | grep "State:" | grep -o "ACTIVE\|ENABLED\|DISABLED" | head -1 || echo "")
+            if [[ "$state" == "ACTIVE" ]] || [[ "$state" == "ENABLED" ]]; then
+                print_success "Extension $extension_uuid enabled and active"
+                return 0
+            else
+                print_warning "Extension $extension_uuid enabled but state is: $state"
+            fi
         fi
     fi
     
@@ -620,21 +904,40 @@ enable_extension() {
             return 0
         fi
         
-        # Add extension to list
-        # Handle empty list case
-        if [[ "$current_list" == "[]" ]] || [[ -z "$current_list" ]]; then
-            dconf write /org/gnome/shell/enabled-extensions "['$extension_uuid']" 2>/dev/null || true
+        # Add extension to list using a more robust method
+        # Parse the current list properly
+        local new_list=""
+        if [[ "$current_list" == "[]" ]] || [[ -z "$current_list" ]] || [[ "$current_list" == "@as []" ]]; then
+            # Empty list, start fresh
+            new_list="['$extension_uuid']"
         else
-            # Remove brackets and quotes, add new extension, then reformat
+            # Parse existing list - handle both ['ext1', 'ext2'] and @as ['ext1', 'ext2'] formats
             local clean_list
-            clean_list=$(echo "$current_list" | sed "s/^\[//; s/\]$//; s/'//g")
-            local new_list="['$clean_list','$extension_uuid']"
-            new_list=$(echo "$new_list" | sed "s/','/', '/g")  # Fix spacing
-            dconf write /org/gnome/shell/enabled-extensions "$new_list" 2>/dev/null || true
+            clean_list=$(echo "$current_list" | sed "s/^@as //; s/^\[//; s/\]$//; s/'//g" | tr -d ' ')
+            
+            if [[ -z "$clean_list" ]]; then
+                new_list="['$extension_uuid']"
+            else
+                # Build new list properly
+                new_list="['${clean_list//,/\', \'}, '$extension_uuid']"
+            fi
         fi
         
-        print_success "Extension $extension_uuid enabled via dconf"
-        return 0
+        # Write the new list
+        if dconf write /org/gnome/shell/enabled-extensions "$new_list" 2>/dev/null; then
+            print_success "Extension $extension_uuid enabled via dconf"
+            return 0
+        else
+            # Try alternative format
+            if [[ "$new_list" =~ \['.*'\] ]]; then
+                # Try with @as prefix (GNOME 42+)
+                local alt_list="@as $new_list"
+                if dconf write /org/gnome/shell/enabled-extensions "$alt_list" 2>/dev/null; then
+                    print_success "Extension $extension_uuid enabled via dconf (alt format)"
+                    return 0
+                fi
+            fi
+        fi
     fi
     
     print_warning "Could not enable extension $extension_uuid automatically"
@@ -678,6 +981,14 @@ configure_system_extensions() {
     fi
     
     print_info "Setting up system extensions..."
+    
+    # Fix permissions for all existing extensions (in case some have wrong permissions)
+    local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+    if [[ -d "$extensions_dir" ]]; then
+        print_info "Fixing permissions for existing extensions..."
+        find "$extensions_dir" -type d -exec chmod 755 {} \; 2>/dev/null || true
+        find "$extensions_dir" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    fi
     
     # Install Extension Manager if not available
     if ! command -v extension-manager &> /dev/null && ! is_installed "gnome-shell-extension-manager"; then
@@ -901,21 +1212,84 @@ configure_system_extensions() {
         # Enable extension if installed
         if [[ "$install_success" == "true" ]]; then
             print_info "Enabling $extension_name..."
-            sleep 2
+            sleep 1
+            
+            # Ensure extension directory has correct permissions
+            local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+            local extension_dir="$extensions_dir/$extension_uuid"
+            if [[ -d "$extension_dir" ]]; then
+                chmod -R u+rwX,go+rX "$extension_dir" 2>/dev/null || true
+                find "$extension_dir" -type d -exec chmod 755 {} \; 2>/dev/null || true
+                find "$extension_dir" -type f -exec chmod 644 {} \; 2>/dev/null || true
+            fi
             
             if enable_extension "$extension_uuid"; then
-                print_success "$extension_name installed and enabled ✓"
+                # Force reload GNOME Shell to activate extension
+                sleep 2
+                reload_gnome_shell || true
+                
+                # Wait and verify extension is active
+                sleep 3
+                local final_state
+                if command -v gnome-extensions &> /dev/null; then
+                    final_state=$(gnome-extensions info "$extension_uuid" 2>/dev/null | grep "State:" | grep -o "ACTIVE\|ENABLED\|DISABLED" | head -1 || echo "")
+                    if [[ "$final_state" == "ACTIVE" ]]; then
+                        print_success "$extension_name installed and enabled ✓ (ACTIVE)"
+                    elif [[ "$final_state" == "ENABLED" ]]; then
+                        print_success "$extension_name installed and enabled ✓ (may need restart)"
+                    else
+                        print_warning "$extension_name enabled but not active (state: $final_state)"
+                        print_info "You may need to restart GNOME Shell: Press Alt+F2, type 'r' and Enter"
+                    fi
+                else
+                    print_success "$extension_name installed and enabled ✓"
+                fi
                 return 0
             else
                 print_warning "$extension_name installed but could not be enabled automatically"
                 print_info "Trying alternative enable method..."
+                
+                # Try multiple methods to enable
+                local enable_success=false
+                
+                # Method 1: Force disable then enable via gnome-extensions
                 if command -v gnome-extensions &> /dev/null; then
+                    gnome-extensions disable "$extension_uuid" 2>/dev/null || true
+                    sleep 1
                     if gnome-extensions enable "$extension_uuid" 2>/dev/null; then
-                        print_success "$extension_name enabled via gnome-extensions"
-                        return 0
+                        enable_success=true
                     fi
                 fi
+                
+                # Method 2: Use dconf directly with proper formatting
+                if [[ "$enable_success" == "false" ]] && command -v dconf &> /dev/null; then
+                    local current_list
+                    current_list=$(dconf read /org/gnome/shell/enabled-extensions 2>/dev/null || echo "[]")
+                    if ! echo "$current_list" | grep -q "$extension_uuid"; then
+                        # Add to list
+                        local clean_list
+                        clean_list=$(echo "$current_list" | sed "s/^@as //; s/^\[//; s/\]$//; s/'//g" | tr -d ' ')
+                        if [[ -z "$clean_list" ]] || [[ "$clean_list" == "" ]]; then
+                            dconf write /org/gnome/shell/enabled-extensions "['$extension_uuid']" 2>/dev/null && enable_success=true
+                        else
+                            # Build properly formatted list
+                            local new_list="@as ['${clean_list//,/\', \'}, '$extension_uuid']"
+                            dconf write /org/gnome/shell/enabled-extensions "$new_list" 2>/dev/null && enable_success=true
+                        fi
+                    else
+                        enable_success=true  # Already in list
+                    fi
+                fi
+                
+                if [[ "$enable_success" == "true" ]]; then
+                    sleep 2
+                    reload_gnome_shell || true
+                    print_success "$extension_name enabled via alternative method"
+                    return 0
+                fi
+                
                 print_info "Please enable manually: Open Extension Manager and toggle $extension_name ON"
+                print_info "Or run: gnome-extensions enable $extension_uuid"
                 return 1
             fi
         else
@@ -928,9 +1302,23 @@ configure_system_extensions() {
         fi
     }
     
+    # Define extensions directory
+    local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+    
     # Install Clipboard Indicator (clipboard icon in top bar)
     if install_and_enable_extension "Clipboard Indicator" "779" "clipboard-indicator@tudmotu.com"; then
         print_info "Clipboard Indicator is now active - clipboard icon in top bar"
+    fi
+    
+    # Force re-enable Clipboard Indicator if it's installed but not working
+    if [[ -d "$extensions_dir/clipboard-indicator@tudmotu.com" ]]; then
+        print_info "Ensuring Clipboard Indicator is properly activated..."
+        if command -v gnome-extensions &> /dev/null; then
+            gnome-extensions disable "clipboard-indicator@tudmotu.com" 2>/dev/null || true
+            sleep 1
+            gnome-extensions enable "clipboard-indicator@tudmotu.com" 2>/dev/null || true
+            sleep 1
+        fi
     fi
     
     # Install Blur My Shell (adds blur effects to GNOME Shell)
@@ -946,6 +1334,75 @@ configure_system_extensions() {
     # Install Dash to Panel (combines dash and top panel into single panel)
     if install_and_enable_extension "Dash to Panel" "1160" "dash-to-panel@jderose9.github.com"; then
         print_info "Dash to Panel is now active - dash and top panel combined"
+        
+        # Configure Dash to Panel settings
+        if command -v dconf &> /dev/null; then
+            print_info "Configuring Dash to Panel settings..."
+            
+            # Get current panel-sizes JSON to preserve monitor-specific settings
+            local current_sizes
+            current_sizes=$(dconf read /org/gnome/shell/extensions/dash-to-panel/panel-sizes 2>/dev/null | tr -d "'" || echo "")
+            
+            # panel-sizes is a JSON object mapping monitor IDs to sizes
+            # Format: '{"monitor-id-1":48,"monitor-id-2":48}'
+            # We need to update all values to 32 while preserving monitor IDs
+            if [[ -n "$current_sizes" ]] && [[ "$current_sizes" != "{}" ]]; then
+                # Update all monitor sizes to 32 using Python (most reliable)
+                local updated_sizes
+                if command -v python3 &> /dev/null; then
+                    updated_sizes=$(echo "$current_sizes" | python3 -c "import sys, json; data=json.load(sys.stdin); print(json.dumps({k:32 for k in data.keys()}))" 2>/dev/null || echo "")
+                elif command -v jq &> /dev/null; then
+                    updated_sizes=$(echo "$current_sizes" | jq 'with_entries(.value = 32)' 2>/dev/null || echo "")
+                else
+                    # Fallback: use sed to replace all numeric values with 32
+                    updated_sizes=$(echo "$current_sizes" | sed -E 's/:[0-9]+/:32/g' 2>/dev/null || echo "")
+                fi
+                
+                if [[ -n "$updated_sizes" ]] && [[ "$updated_sizes" != "$current_sizes" ]]; then
+                    dconf write /org/gnome/shell/extensions/dash-to-panel/panel-sizes "'$updated_sizes'" 2>/dev/null || true
+                    print_success "Dash to Panel panel thickness set to 32px for all monitors"
+                fi
+            else
+                # If no current sizes exist, the extension will use default
+                # We can't set it without monitor IDs, but we can enable "apply to all monitors"
+                dconf write /org/gnome/shell/extensions/dash-to-panel/panel-sizes-apply-all-monitors "true" 2>/dev/null || true
+                print_info "Dash to Panel will use 32px when configured (applies to all monitors enabled)"
+            fi
+            
+            print_success "Dash to Panel configured (panel thickness: 32px)"
+        fi
+    fi
+    
+    # Force re-enable Dash to Panel if it's installed but not working
+    if [[ -d "$extensions_dir/dash-to-panel@jderose9.github.com" ]]; then
+        print_info "Ensuring Dash to Panel is properly activated..."
+        if command -v gnome-extensions &> /dev/null; then
+            gnome-extensions disable "dash-to-panel@jderose9.github.com" 2>/dev/null || true
+            sleep 1
+            gnome-extensions enable "dash-to-panel@jderose9.github.com" 2>/dev/null || true
+            sleep 1
+            
+            # Re-apply configuration after re-enabling
+            if command -v dconf &> /dev/null; then
+                sleep 2  # Wait for extension to fully initialize
+                # Re-read and update panel sizes
+                local current_sizes
+                current_sizes=$(dconf read /org/gnome/shell/extensions/dash-to-panel/panel-sizes 2>/dev/null | tr -d "'" || echo "")
+                if [[ -n "$current_sizes" ]] && [[ "$current_sizes" != "{}" ]]; then
+                    local updated_sizes
+                    if command -v python3 &> /dev/null; then
+                        updated_sizes=$(echo "$current_sizes" | python3 -c "import sys, json; data=json.load(sys.stdin); print(json.dumps({k:32 for k in data.keys()}))" 2>/dev/null || echo "")
+                    elif command -v jq &> /dev/null; then
+                        updated_sizes=$(echo "$current_sizes" | jq 'with_entries(.value = 32)' 2>/dev/null || echo "")
+                    else
+                        updated_sizes=$(echo "$current_sizes" | sed -E 's/:[0-9]+/:32/g' 2>/dev/null || echo "")
+                    fi
+                    if [[ -n "$updated_sizes" ]] && [[ "$updated_sizes" != "$current_sizes" ]]; then
+                        dconf write /org/gnome/shell/extensions/dash-to-panel/panel-sizes "'$updated_sizes'" 2>/dev/null || true
+                    fi
+                fi
+            fi
+        fi
     fi
     
     # Install Vitals (system monitoring - temperature, CPU, memory, network, battery)
@@ -967,9 +1424,14 @@ configure_system_extensions() {
     fi
     
     # Refresh GNOME Shell to load extensions
-    if command -v busctl &> /dev/null; then
-        print_info "Refreshing GNOME Shell to load extensions..."
-        busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting GNOME Shell...")' 2>/dev/null || true
+    print_info "Refreshing GNOME Shell to load extensions..."
+    if reload_gnome_shell; then
+        print_success "GNOME Shell reloaded"
+    else
+        print_warning "Could not automatically reload GNOME Shell"
+        print_info "Please restart GNOME Shell manually:"
+        print_info "   - Press Alt+F2, type 'r' and press Enter"
+        print_info "   - Or log out and log back in"
     fi
     
     print_info ""
@@ -980,10 +1442,42 @@ configure_system_extensions() {
     print_info "   - Dash to Panel (combines dash and top panel)"
     print_info "   - Vitals (temperature, CPU, memory, network, battery in top bar)"
     print_info ""
-    print_info "💡 If extensions don't appear:"
+    print_info "🔍 Verifying extensions..."
+    
+    # Verify extensions are properly installed and enabled
+    local extensions_dir="$HOME/.local/share/gnome-shell/extensions"
+    local verified_count=0
+    local extensions_to_check=("clipboard-indicator@tudmotu.com" "blur-my-shell@aunetx" "caffeine@patapon.info" "dash-to-panel@jderose9.github.com" "Vitals@CoreCoding.com")
+    
+    for ext_uuid in "${extensions_to_check[@]}"; do
+        local ext_dir="$extensions_dir/$ext_uuid"
+        if [[ -d "$ext_dir" ]] && [[ -f "$ext_dir/metadata.json" ]]; then
+            # Check if enabled
+            if gnome-extensions list 2>/dev/null | grep -q "^$ext_uuid$"; then
+                local enabled_status
+                enabled_status=$(gnome-extensions info "$ext_uuid" 2>/dev/null | grep "State:" | grep -o "ENABLED\|DISABLED" || echo "")
+                if [[ "$enabled_status" == "ENABLED" ]]; then
+                    verified_count=$((verified_count + 1))
+                    print_success "$ext_uuid is installed and enabled"
+                else
+                    print_warning "$ext_uuid is installed but disabled"
+                fi
+            else
+                print_warning "$ext_uuid is installed but not in extensions list"
+            fi
+        else
+            print_warning "$ext_uuid is not properly installed"
+        fi
+    done
+    
+    print_info ""
+    print_info "✅ Verified: $verified_count/${#extensions_to_check[@]} extensions are installed and enabled"
+    print_info ""
+    print_info "💡 If extensions don't appear in Extension Manager or don't work:"
     print_info "   1. Press Alt+F2, type 'r' and press Enter (restart GNOME Shell)"
     print_info "   2. Or log out and log back in"
-    print_info "   3. Or check Extension Manager to see if they're enabled"
+    print_info "   3. Open Extension Manager (extension-manager) to verify they're listed"
+    print_info "   4. If still not visible, check permissions: ls -la ~/.local/share/gnome-shell/extensions/"
 }
 
 ###############################################################################
@@ -1010,6 +1504,7 @@ main() {
     # Configure GNOME appearance (only if running in GNOME)
     if is_gnome; then
         configure_gnome_appearance
+        configure_power_settings
         configure_terminal_profile
         configure_wallpaper
         install_gnome_extensions
@@ -1024,7 +1519,7 @@ main() {
     print_info "  1. Log out and log back in (or restart) to apply theme changes"
     print_info "  2. Open GNOME Extensions app to install additional extensions"
     print_info "  3. Set a custom dark wallpaper from Settings > Appearance"
-    print_info "  4. Configure Powerlevel10k colors to match your terminal theme"
+    print_info "  4. Configure Starship colors to match your terminal theme (optional)"
 }
 
 # Run main function
