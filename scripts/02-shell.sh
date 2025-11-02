@@ -87,6 +87,71 @@ main() {
         print_success "zsh-syntax-highlighting installed"
     fi
     
+    # Install Nerd Font (required for Starship icons to display correctly)
+    print_info "Installing Nerd Font (Meslo) for Starship icons..."
+    local fonts_dir="$HOME/.local/share/fonts"
+    mkdir -p "$fonts_dir"
+    
+    # Check if any Nerd Font is already installed
+    local nerd_font_installed=false
+    if fc-list | grep -qi "nerd\|meslo" 2>/dev/null; then
+        nerd_font_installed=true
+        print_info "Nerd Font already installed"
+    else
+        # Try to install Meslo Nerd Font
+        local meslo_dir="$fonts_dir/Meslo"
+        mkdir -p "$meslo_dir"
+        
+        # Download Meslo Nerd Font from GitHub releases
+        local meslo_url="https://github.com/ryanoasis/nerd-fonts/releases/download/v3.2.1/Meslo.zip"
+        local meslo_zip="/tmp/meslo-nerd-font.zip"
+        
+        if command -v safe_curl_download_with_cache &> /dev/null; then
+            if safe_curl_download_with_cache "$meslo_url" "$meslo_zip" 3 300 30; then
+                # Install unzip if not available
+                if ! command -v unzip &> /dev/null; then
+                    if command -v ensure_apt_updated &> /dev/null; then
+                        ensure_apt_updated
+                    fi
+                    DEBIAN_FRONTEND=noninteractive sudo apt-get install -y unzip 2>/dev/null || true
+                fi
+                
+                if command -v unzip &> /dev/null; then
+                    unzip -q -o "$meslo_zip" -d "/tmp/meslo-extract" 2>/dev/null || true
+                    if [[ -d "/tmp/meslo-extract" ]]; then
+                        find "/tmp/meslo-extract" -name "*.ttf" -exec cp {} "$meslo_dir/" \; 2>/dev/null || true
+                        rm -rf "/tmp/meslo-extract"
+                        nerd_font_installed=true
+                    fi
+                    rm -f "$meslo_zip"
+                fi
+            fi
+        elif command -v curl &> /dev/null; then
+            # Fallback: direct curl
+            if curl -fsSL --max-time 300 --connect-timeout 30 --retry 3 "$meslo_url" -o "$meslo_zip" 2>/dev/null; then
+                if command -v unzip &> /dev/null; then
+                    unzip -q -o "$meslo_zip" -d "/tmp/meslo-extract" 2>/dev/null || true
+                    if [[ -d "/tmp/meslo-extract" ]]; then
+                        find "/tmp/meslo-extract" -name "*.ttf" -exec cp {} "$meslo_dir/" \; 2>/dev/null || true
+                        rm -rf "/tmp/meslo-extract"
+                        nerd_font_installed=true
+                    fi
+                    rm -f "$meslo_zip"
+                fi
+            fi
+        fi
+        
+        # Update font cache
+        if [[ "$nerd_font_installed" == "true" ]] && command -v fc-cache &> /dev/null; then
+            print_info "Updating font cache..."
+            fc-cache -fv "$fonts_dir" 2>/dev/null || true
+            print_success "Nerd Font (Meslo) installed and cache updated"
+        elif [[ "$nerd_font_installed" == "false" ]]; then
+            print_warning "Could not install Nerd Font automatically"
+            print_info "You may need to install it manually. Visit: https://www.nerdfonts.com/"
+        fi
+    fi
+    
     # Install Starship prompt (modern, fast, customizable)
     if command -v starship &> /dev/null; then
         print_info "Starship already installed ($(starship --version 2>/dev/null | head -n1 || echo 'installed'))"
@@ -126,6 +191,30 @@ main() {
         else
             print_warning "Starship installation completed but command not found"
             print_info "You may need to restart your terminal or run: source ~/.zshrc"
+        fi
+    fi
+    
+    # Configure Starship with Nerd Font Symbols preset
+    if command -v starship &> /dev/null; then
+        local starship_config_dir="$HOME/.config"
+        local starship_config_file="$starship_config_dir/starship.toml"
+        
+        # Only create config if it doesn't exist (preserve user customization)
+        if [[ ! -f "$starship_config_file" ]]; then
+            print_info "Configuring Starship with Nerd Font Symbols preset..."
+            mkdir -p "$starship_config_dir"
+            
+            # Generate preset using starship command
+            if starship preset nerd-font-symbols > "$starship_config_file" 2>/dev/null; then
+                print_success "Starship configured with Nerd Font Symbols preset"
+                print_info "Config file: $starship_config_file"
+            else
+                print_warning "Could not generate Starship preset automatically"
+                print_info "You can manually configure by running: starship preset nerd-font-symbols > ~/.config/starship.toml"
+            fi
+        else
+            print_info "Starship config already exists, skipping preset generation"
+            print_info "To apply Nerd Font Symbols preset, run: starship preset nerd-font-symbols > ~/.config/starship.toml"
         fi
     fi
     

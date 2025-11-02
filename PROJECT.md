@@ -209,14 +209,19 @@ fi
   - `zsh-autosuggestions` (from zsh-users/zsh-autosuggestions)
   - `zsh-syntax-highlighting` (from zsh-users/zsh-syntax-highlighting)
   - Built-in: `git`, `docker`, `node`
+- **Nerd Font**: Meslo Nerd Font (installed automatically from GitHub releases) - required for Starship icons
 - **Starship**: Modern, fast, customizable prompt (written in Rust) - installed via official installer script
+- **Starship Config**: Automatically configured with "Nerd Font Symbols" preset (from https://starship.rs/presets/)
 
 **Configuration**:
 
+- Installs Meslo Nerd Font (required for Starship icons to display correctly)
 - Creates project directory: `~/www/personal/`
 - Symlinks dotfiles from `dotfiles/` to `~/`
 - Copies Git configuration file (`.gitconfig-my`) to home (not symlinked, so it can be customized)
 - Automatically initializes Starship prompt in `.zshrc`
+- Automatically generates Starship config with "Nerd Font Symbols" preset (`~/.config/starship.toml`)
+- Configures GNOME Terminal to use Meslo Nerd Font (if available)
 - Backs up existing files with `.backup` suffix
 - Sets Zsh as default shell (`chsh -s $(which zsh)`)
 
@@ -230,7 +235,11 @@ fi
 
 - `dotfiles/.gitconfig-my` → `~/.gitconfig-my` (for personal projects)
 
-**Idempotency**: Checks for `.oh-my-zsh` directory, plugin directories, Starship binary (`command -v starship`), existing project directories, and existing Git config files
+**Files created**:
+
+- `~/.config/starship.toml` - Starship configuration with Nerd Font Symbols preset (only if not exists, preserves user customization)
+
+**Idempotency**: Checks for Nerd Font installation (`fc-list | grep -qi "nerd\|meslo"`), `.oh-my-zsh` directory, plugin directories, Starship binary (`command -v starship`), existing Starship config file, existing project directories, and existing Git config files
 
 ---
 
@@ -787,7 +796,7 @@ When helping with this project:
 | Java (SDKMAN)       | 8, 11, 17, 21 LTS        | SDKMAN (Temurin)     | `sdk update && sdk install java <version>`                                         |
 | Android Studio      | Latest stable            | Snap/Google          | `snap refresh android-studio` or manual download                                   |
 | Oh My Zsh           | Latest                   | GitHub               | `omz update`                                                                       |
-| Shell plugins       | Latest                   | GitHub               | `git pull` in plugin directories                                                  |
+| Shell plugins       | Latest                   | GitHub               | `git pull` in plugin directories                                                   |
 | Starship            | Latest                   | Official installer   | `curl -fsSL https://starship.rs/install.sh \| sh`                                  |
 
 ---

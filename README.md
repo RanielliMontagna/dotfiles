@@ -86,6 +86,7 @@ DOTFILES_BRANCH=feat/visual-customization curl -fsSL https://raw.githubuserconte
   - zsh-syntax-highlighting (real-time syntax check)
   - git, docker, node (completions and helpers)
 - **Prompt**: Starship (minimal, blazing-fast, and infinitely customizable prompt written in Rust)
+- **Nerd Font**: Meslo Nerd Font (installed automatically for Starship icons to display correctly)
 
 ### Node.js (Always Installed)
 
@@ -244,18 +245,30 @@ If you need to add work projects later, you can create a new config file (e.g., 
 
 ### 3. Starship Prompt
 
-Starship is already installed and configured! The prompt will work immediately after restarting your terminal.
+Starship is already installed and configured with the **Nerd Font Symbols** preset! The prompt will work immediately after restarting your terminal.
+
+**Important**: For all icons to display correctly, make sure your terminal is using a Nerd Font:
+
+- The script automatically installs **Meslo Nerd Font**
+- Configure your terminal to use "MesloLGS NF" or any other Nerd Font
+- In GNOME Terminal: Preferences > Profiles > Text > Custom font → Select "MesloLGS NF Regular" or "Meslo Nerd Font"
 
 Starship is a minimal, blazing-fast, and infinitely customizable prompt that works with any shell.
 
-To customize Starship, create a configuration file:
+**Available presets** (from https://starship.rs/presets/):
 
 ```bash
-# Generate default config (optional)
-mkdir -p ~/.config
-starship preset nerd-font-symbols > ~/.config/starship.toml
+# Apply different presets
+starship preset nerd-font-symbols > ~/.config/starship.toml  # Nerd Font icons (default)
+starship preset no-nerd-font > ~/.config/starship.toml        # No Nerd Font required
+starship preset pure-prompt > ~/.config/starship.toml         # Pure prompt style
+starship preset tokyo-night > ~/.config/starship.toml         # Tokyo Night theme
+# ... and more!
+```
 
-# Or edit the config manually
+To customize Starship manually:
+
+```bash
 nano ~/.config/starship.toml
 ```
 

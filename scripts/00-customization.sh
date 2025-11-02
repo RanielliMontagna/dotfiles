@@ -556,8 +556,19 @@ configure_terminal_profile() {
             # Use system theme colors as fallback
             dconf write /org/gnome/terminal/legacy/profiles:/:${profile_id}/use-theme-colors "false" 2>/dev/null || true
             
-            # Font (JetBrains Mono if available)
-            if fc-list | grep -q "JetBrains Mono"; then
+            # Font (prefer Meslo Nerd Font for Starship icons, fallback to JetBrains Mono)
+            if fc-list | grep -qi "Meslo.*Nerd"; then
+                # Try to find Meslo Nerd Font variant (MesloLGS NF is common)
+                local meslo_font
+                meslo_font=$(fc-list | grep -i "Meslo.*Nerd" | head -n1 | cut -d: -f2 | cut -d',' -f1 | sed 's/^[[:space:]]*//' | head -n1 || echo "")
+                if [[ -n "$meslo_font" ]]; then
+                    dconf write /org/gnome/terminal/legacy/profiles:/:${profile_id}/font "'$meslo_font 11'" 2>/dev/null || true
+                    print_info "Using Meslo Nerd Font for terminal (required for Starship icons)"
+                else
+                    # Fallback: try MesloLGS NF directly
+                    dconf write /org/gnome/terminal/legacy/profiles:/:${profile_id}/font "'MesloLGS NF 11'" 2>/dev/null || true
+                fi
+            elif fc-list | grep -q "JetBrains Mono"; then
                 dconf write /org/gnome/terminal/legacy/profiles:/:${profile_id}/font "'JetBrains Mono 11'" 2>/dev/null || true
             fi
             
