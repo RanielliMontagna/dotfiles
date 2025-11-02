@@ -514,7 +514,7 @@ fi
     - **Clipboard Indicator** - Clipboard manager in top bar
     - **Blur My Shell** - Blur effects on panels and overview
     - **Caffeine** - Prevents screen lock/sleep
-    - **Dash to Panel** - Combines dash and top panel
+    - **Dash to Panel** - Combines dash and top panel (configured with 32px panel thickness)
     - **Vitals** - System monitoring (temperature, CPU, memory, network, battery)
   - Uses extensions.gnome.org API for automatic download
   - Verifies compatibility with GNOME Shell version

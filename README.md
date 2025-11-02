@@ -153,7 +153,7 @@ DOTFILES_BRANCH=feat/visual-customization curl -fsSL https://raw.githubuserconte
   - Clipboard Indicator (clipboard manager)
   - Blur My Shell (blur effects)
   - Caffeine (prevents screen lock)
-  - Dash to Panel (combines dash and top panel)
+  - Dash to Panel (combines dash and top panel, configured with 32px thickness)
   - Vitals (system monitoring: CPU, memory, temperature, network, battery)
 
 ### Extra Tools (Optional)

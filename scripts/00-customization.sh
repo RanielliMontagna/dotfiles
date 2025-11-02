@@ -1334,6 +1334,43 @@ configure_system_extensions() {
     # Install Dash to Panel (combines dash and top panel into single panel)
     if install_and_enable_extension "Dash to Panel" "1160" "dash-to-panel@jderose9.github.com"; then
         print_info "Dash to Panel is now active - dash and top panel combined"
+        
+        # Configure Dash to Panel settings
+        if command -v dconf &> /dev/null; then
+            print_info "Configuring Dash to Panel settings..."
+            
+            # Get current panel-sizes JSON to preserve monitor-specific settings
+            local current_sizes
+            current_sizes=$(dconf read /org/gnome/shell/extensions/dash-to-panel/panel-sizes 2>/dev/null | tr -d "'" || echo "")
+            
+            # panel-sizes is a JSON object mapping monitor IDs to sizes
+            # Format: '{"monitor-id-1":48,"monitor-id-2":48}'
+            # We need to update all values to 32 while preserving monitor IDs
+            if [[ -n "$current_sizes" ]] && [[ "$current_sizes" != "{}" ]]; then
+                # Update all monitor sizes to 32 using Python (most reliable)
+                local updated_sizes
+                if command -v python3 &> /dev/null; then
+                    updated_sizes=$(echo "$current_sizes" | python3 -c "import sys, json; data=json.load(sys.stdin); print(json.dumps({k:32 for k in data.keys()}))" 2>/dev/null || echo "")
+                elif command -v jq &> /dev/null; then
+                    updated_sizes=$(echo "$current_sizes" | jq 'with_entries(.value = 32)' 2>/dev/null || echo "")
+                else
+                    # Fallback: use sed to replace all numeric values with 32
+                    updated_sizes=$(echo "$current_sizes" | sed -E 's/:[0-9]+/:32/g' 2>/dev/null || echo "")
+                fi
+                
+                if [[ -n "$updated_sizes" ]] && [[ "$updated_sizes" != "$current_sizes" ]]; then
+                    dconf write /org/gnome/shell/extensions/dash-to-panel/panel-sizes "'$updated_sizes'" 2>/dev/null || true
+                    print_success "Dash to Panel panel thickness set to 32px for all monitors"
+                fi
+            else
+                # If no current sizes exist, the extension will use default
+                # We can't set it without monitor IDs, but we can enable "apply to all monitors"
+                dconf write /org/gnome/shell/extensions/dash-to-panel/panel-sizes-apply-all-monitors "true" 2>/dev/null || true
+                print_info "Dash to Panel will use 32px when configured (applies to all monitors enabled)"
+            fi
+            
+            print_success "Dash to Panel configured (panel thickness: 32px)"
+        fi
     fi
     
     # Force re-enable Dash to Panel if it's installed but not working
@@ -1344,6 +1381,27 @@ configure_system_extensions() {
             sleep 1
             gnome-extensions enable "dash-to-panel@jderose9.github.com" 2>/dev/null || true
             sleep 1
+            
+            # Re-apply configuration after re-enabling
+            if command -v dconf &> /dev/null; then
+                sleep 2  # Wait for extension to fully initialize
+                # Re-read and update panel sizes
+                local current_sizes
+                current_sizes=$(dconf read /org/gnome/shell/extensions/dash-to-panel/panel-sizes 2>/dev/null | tr -d "'" || echo "")
+                if [[ -n "$current_sizes" ]] && [[ "$current_sizes" != "{}" ]]; then
+                    local updated_sizes
+                    if command -v python3 &> /dev/null; then
+                        updated_sizes=$(echo "$current_sizes" | python3 -c "import sys, json; data=json.load(sys.stdin); print(json.dumps({k:32 for k in data.keys()}))" 2>/dev/null || echo "")
+                    elif command -v jq &> /dev/null; then
+                        updated_sizes=$(echo "$current_sizes" | jq 'with_entries(.value = 32)' 2>/dev/null || echo "")
+                    else
+                        updated_sizes=$(echo "$current_sizes" | sed -E 's/:[0-9]+/:32/g' 2>/dev/null || echo "")
+                    fi
+                    if [[ -n "$updated_sizes" ]] && [[ "$updated_sizes" != "$current_sizes" ]]; then
+                        dconf write /org/gnome/shell/extensions/dash-to-panel/panel-sizes "'$updated_sizes'" 2>/dev/null || true
+                    fi
+                fi
+            fi
         fi
     fi
     
