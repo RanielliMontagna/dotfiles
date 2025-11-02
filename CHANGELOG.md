@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.2.0](https://github.com/RanielliMontagna/dotfiles/compare/v1.1.0...v1.2.0) (2025-11-02)
+
+
+### Features
+
+* add GNOME Shell reload functionality and improve extension management with robust UUID handling and permission fixes ([353e5ec](https://github.com/RanielliMontagna/dotfiles/commit/353e5ec0ccebf08ba780d797a25091f6a3298076))
+* add power settings configuration to disable automatic suspend/hibernate on AC and battery ([f5e4121](https://github.com/RanielliMontagna/dotfiles/commit/f5e4121eaf3298dcd0489a699bf9c0d54f09aeee))
+* configure Dash to Panel extension for consistent 32px panel thickness across monitors ([b73a19d](https://github.com/RanielliMontagna/dotfiles/commit/b73a19df7ac76352ef5bafd881eb91f1c0af1402))
+* enhance dark theme configuration for Zorin OS 18 with improved detection, application methods, and verification steps ([bec2f1d](https://github.com/RanielliMontagna/dotfiles/commit/bec2f1dee79f5ffa0b6f175953929bd428f182e5))
+* implement interactive component selection in bootstrap.sh for enhanced user experience during installation ([925189b](https://github.com/RanielliMontagna/dotfiles/commit/925189bd29902a0041ebf0722ddd6aa92c4fcc5c))
+* improve GNOME extension management with compatibility checks, enhanced activation methods, and reactivation for existing extensions ([51ca4ba](https://github.com/RanielliMontagna/dotfiles/commit/51ca4bad91a4076ba755652271c990bbf38c5ce6))
+* improve user input handling in bootstrap.sh for interactive and non-interactive modes ([375196d](https://github.com/RanielliMontagna/dotfiles/commit/375196dfd842fc85f151a2e33c89c705cb446f24))
+* replace Powerlevel10k with Starship prompt in Zsh configuration for improved performance and customization ([e52bde9](https://github.com/RanielliMontagna/dotfiles/commit/e52bde995cbb9d6778de48a3d7ffd07643a7b522))
+
+
+### Bug Fixes
+
+* implement automatic script downloading in bootstrap.sh for enhanced installation process ([fc96780](https://github.com/RanielliMontagna/dotfiles/commit/fc9678019555b4bb298e48223603dbefa7c8c00a))
+* integrate Meslo Nerd Font installation and Starship configuration for enhanced prompt visuals ([f3b42cb](https://github.com/RanielliMontagna/dotfiles/commit/f3b42cb327999b71c1c14daeaa9638eecd2b5414))
+* minor adjustments ([ef9d7b2](https://github.com/RanielliMontagna/dotfiles/commit/ef9d7b2c1b44a8f6cd3eec69248df8994d962964))
+
 ## [1.1.0](https://github.com/RanielliMontagna/dotfiles/compare/v1.0.0...v1.1.0) (2025-11-01)
 
 
