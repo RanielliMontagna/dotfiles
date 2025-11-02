@@ -285,7 +285,16 @@ select_components() {
         echo -e "  ${GREEN}Enter${NC}  - Confirm and continue"
         echo -e "  ${GREEN}q${NC}      - Quit"
         echo ""
-        read -p "Your choice: " choice
+        # Read from terminal explicitly (works even when stdin is piped)
+        # When executed via curl | bash, stdin is the pipe, but we need to read from the actual terminal
+        if [[ -t 0 ]]; then
+            # Stdin is a terminal, read normally
+            read -p "Your choice: " choice
+        else
+            # Stdin is not a terminal (pipe), read from /dev/tty directly
+            echo -n "Your choice: "
+            read choice </dev/tty
+        fi
         
         case "$choice" in
             [1-9]|10)
@@ -366,8 +375,15 @@ check_os() {
     if [[ "$ID" != "zorin" ]] && [[ "$ID_LIKE" != *"ubuntu"* ]] && [[ "$ID" != "ubuntu" ]]; then
         print_warning "This script is optimized for Zorin OS (Ubuntu-based)."
         print_warning "Detected: $NAME"
-        read -p "Continue anyway? (y/N) " -n 1 -r
-        echo
+        # Read from terminal explicitly when stdin might be piped
+        if [[ -t 0 ]]; then
+            read -p "Continue anyway? (y/N) " -n 1 -r
+            echo
+        else
+            echo -n "Continue anyway? (y/N) "
+            read -n 1 -r </dev/tty
+            echo
+        fi
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             exit 1
         fi
@@ -381,13 +397,11 @@ check_os() {
 main() {
     print_header "🚀 Dotfiles Setup for Zorin OS"
     
-    # Interactive component selection
-    if [[ -z "$DISPLAY" ]] && [[ -z "$SSH_TTY" ]]; then
-        # If running in a non-interactive environment, select all by default
-        SELECTED_SCRIPTS=("00-customization.sh" "01-essentials.sh" "02-shell.sh" "03-nodejs.sh" "04-editors.sh" "05-docker.sh" "06-java.sh" "07-dev-tools.sh" "08-applications.sh")
-        print_info "Non-interactive mode: Installing all essential components"
-    else
-        # Interactive selection
+    # Check if running interactively
+    # When executed via curl | bash, stdin is a pipe but stdout is still a terminal
+    # So we check stdout (and stderr) to determine if user is at a terminal
+    if [[ -t 1 ]] && [[ -t 2 ]]; then
+        # Interactive terminal detected - show component selection menu
         select_components
         
         # Show summary
@@ -398,12 +412,23 @@ main() {
             echo -e "  ${GREEN}✓${NC} $script"
         done
         echo ""
-        read -p "Proceed with installation? (y/N) " -n 1 -r
-        echo
+        # Read from terminal explicitly when stdin might be piped
+        if [[ -t 0 ]]; then
+            read -p "Proceed with installation? (y/N) " -n 1 -r
+            echo
+        else
+            echo -n "Proceed with installation? (y/N) "
+            read -n 1 -r </dev/tty
+            echo
+        fi
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             print_info "Installation cancelled by user."
             exit 0
         fi
+    else
+        # Non-interactive mode (CI/CD, script execution, etc.) - select all essentials by default
+        SELECTED_SCRIPTS=("00-customization.sh" "01-essentials.sh" "02-shell.sh" "03-nodejs.sh" "04-editors.sh" "05-docker.sh" "06-java.sh" "07-dev-tools.sh" "08-applications.sh")
+        print_info "Non-interactive mode: Installing all essential components"
     fi
     
     print_info "Starting setup process..."
