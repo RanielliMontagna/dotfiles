@@ -3,10 +3,11 @@
 ###############################################################################
 # 02-shell.sh
 # 
-# Setup Zsh with Oh My Zsh and apply dotfiles
+# Setup Zsh with Oh My Zsh and Starship prompt
 # - Installs Zsh (latest from Ubuntu repos)
 # - Installs Oh My Zsh framework
 # - Installs useful plugins
+# - Installs Starship prompt (modern, fast, customizable)
 # - Links dotfiles
 # - Sets Zsh as default shell
 #
@@ -15,27 +16,38 @@
 
 set -e
 
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# Load common functions
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPT_DIR/common.sh" ]]; then
+    source "$SCRIPT_DIR/common.sh"
+else
+    # Fallback if common.sh not found
+    GREEN='\033[0;32m'
+    BLUE='\033[0;34m'
+    YELLOW='\033[1;33m'
+    RED='\033[0;31m'
+    NC='\033[0m'
+    
+    print_info() {
+        echo -e "${BLUE}[shell]${NC} $1"
+    }
+    
+    print_success() {
+        echo -e "${GREEN}✓${NC} $1"
+    }
+    
+    print_warning() {
+        echo -e "${YELLOW}⚠${NC} $1"
+    }
+    
+    print_error() {
+        echo -e "${RED}✗${NC} $1"
+    }
+fi
 
 # Get dotfiles directory
-DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+DOTFILES_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 DOTFILES_CONFIG_DIR="$DOTFILES_DIR/dotfiles"
-
-print_info() {
-    echo -e "${BLUE}[shell]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}✓${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
 
 main() {
     # Install Zsh
@@ -75,27 +87,46 @@ main() {
         print_success "zsh-syntax-highlighting installed"
     fi
     
-    # Install Powerlevel10k theme
-    if [[ -d "$ZSH_CUSTOM/themes/powerlevel10k" ]]; then
-        print_info "Powerlevel10k already installed"
+    # Install Starship prompt (modern, fast, customizable)
+    if command -v starship &> /dev/null; then
+        print_info "Starship already installed ($(starship --version 2>/dev/null | head -n1 || echo 'installed'))"
     else
-        print_info "Installing Powerlevel10k theme..."
-        git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$ZSH_CUSTOM/themes/powerlevel10k"
-        print_success "Powerlevel10k installed"
-    fi
-    
-    # Configure Powerlevel10k automatically (copy, not symlink - allows customization)
-    P10K_CONFIG_FILE="$HOME/.p10k.zsh"
-    if [[ -f "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]]; then
-        if [[ ! -f "$P10K_CONFIG_FILE" ]] || [[ "$DOTFILES_CONFIG_DIR/.p10k.zsh" -nt "$P10K_CONFIG_FILE" ]]; then
-            print_info "Configuring Powerlevel10k automatically..."
-            cp "$DOTFILES_CONFIG_DIR/.p10k.zsh" "$P10K_CONFIG_FILE"
-            print_success "Powerlevel10k configured automatically"
+        print_info "Installing Starship prompt..."
+        
+        # Use official Starship installer script
+        if command -v curl &> /dev/null; then
+            # Use safe_curl_download_with_cache if available, otherwise direct curl
+            if command -v safe_curl_download_with_cache &> /dev/null; then
+                local installer_script="/tmp/starship-install.sh"
+                if safe_curl_download_with_cache "https://starship.rs/install.sh" "$installer_script" 3 120 30; then
+                    sh "$installer_script" --yes
+                    rm -f "$installer_script"
+                    print_success "Starship installed"
+                else
+                    print_error "Failed to download Starship installer"
+                    return 1
+                fi
+            else
+                # Fallback: direct curl
+                if curl -fsSL https://starship.rs/install.sh | sh -s -- --yes; then
+                    print_success "Starship installed"
+                else
+                    print_error "Failed to install Starship"
+                    return 1
+                fi
+            fi
         else
-            print_info "Powerlevel10k already configured (using existing ~/.p10k.zsh)"
+            print_error "curl is required to install Starship"
+            return 1
         fi
-    else
-        print_warning "Powerlevel10k config file not found in dotfiles directory"
+        
+        # Verify installation
+        if command -v starship &> /dev/null; then
+            print_success "Starship installed successfully"
+        else
+            print_warning "Starship installation completed but command not found"
+            print_info "You may need to restart your terminal or run: source ~/.zshrc"
+        fi
     fi
     
     # Create project directories structure
@@ -116,22 +147,13 @@ main() {
     # Link dotfiles
     print_info "Linking dotfiles..."
     
-    # Backup existing files (excluding .p10k.zsh which should not be symlinked)
+    # Backup existing files
     for file in .zshrc .gitconfig .aliases; do
         if [[ -f "$HOME/$file" ]] && [[ ! -L "$HOME/$file" ]]; then
             print_warning "Backing up existing $file to $file.backup"
             mv "$HOME/$file" "$HOME/$file.backup"
         fi
     done
-    
-    # Backup .p10k.zsh separately (it's copied, not symlinked)
-    if [[ -f "$HOME/.p10k.zsh" ]] && [[ ! -f "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]] || [[ "$HOME/.p10k.zsh" -nt "$DOTFILES_CONFIG_DIR/.p10k.zsh" ]]; then
-        # Only backup if it's a custom file, not from dotfiles
-        if ! diff -q "$HOME/.p10k.zsh" "$DOTFILES_CONFIG_DIR/.p10k.zsh" &>/dev/null; then
-            print_warning "Backing up existing .p10k.zsh to .p10k.zsh.backup"
-            cp "$HOME/.p10k.zsh" "$HOME/.p10k.zsh.backup" 2>/dev/null || true
-        fi
-    fi
     
     # Backup existing Git config files if they exist and are not symlinks
     if [[ -f "$HOME/.gitconfig-my" ]] && [[ ! -L "$HOME/.gitconfig-my" ]]; then

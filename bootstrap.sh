@@ -225,7 +225,7 @@ select_components() {
     declare -A descriptions=(
         ["00-customization.sh"]="🎨 Visual Customization (Dark Theme, Fonts, Extensions)"
         ["01-essentials.sh"]="📦 Essential Tools (Git, Build Tools, CLI Tools)"
-        ["02-shell.sh"]="🐚 Shell Setup (Zsh, Oh My Zsh, Powerlevel10k)"
+        ["02-shell.sh"]="🐚 Shell Setup (Zsh, Oh My Zsh, Starship)"
         ["03-nodejs.sh"]="🟢 Node.js (NVM, Node LTS, npm packages)"
         ["04-editors.sh"]="📝 Code Editors (VS Code, Cursor)"
         ["05-docker.sh"]="🐳 Docker (Engine, Compose)"
@@ -593,7 +593,7 @@ main() {
     fi
     
     echo -e "\n${GREEN}✓ Configuration:${NC}"
-    echo "  • Shell: Zsh with Oh My Zsh and Powerlevel10k"
+    echo "  • Shell: Zsh with Oh My Zsh and Starship"
     echo "  • Git: Pre-configured for ~/www/personal/ projects"
     if [[ -d "$HOME/www/personal" ]]; then
         echo "  • Project directory: ~/www/personal/ created"
@@ -604,7 +604,7 @@ main() {
     echo -e "${YELLOW}📌 Next Steps:${NC}"
     echo -e "${BLUE}════════════════════════════════════════════════════════════${NC}\n"
     echo "1. Restart your terminal or run: ${GREEN}source ~/.zshrc${NC}"
-    echo "2. Powerlevel10k is already configured and ready to use!"
+    echo "2. Starship is already configured and ready to use!"
     echo "3. Git is already configured for personal projects in ~/www/personal/"
     echo ""
     print_info "Your personal Git config uses:"

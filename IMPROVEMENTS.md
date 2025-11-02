@@ -50,6 +50,7 @@ Melhorias de alta e média prioridade já implementadas:
 - ✅ Perfil de cores dark personalizado no GNOME Terminal (tema Nord)
 - ✅ Configuração automática de paleta de cores dark
 - ✅ Fonte JetBrains Mono configurada no terminal
+- ✅ **Starship prompt** - Modern, fast, and customizable prompt (written in Rust) instead of Powerlevel10k
 - ⚠️ Transparência/blur: Não implementado (requer extensões adicionais)
 
 #### 🎭 Extensões GNOME (Zorin OS)

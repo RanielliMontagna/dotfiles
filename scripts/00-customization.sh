@@ -1385,7 +1385,7 @@ main() {
     print_info "  1. Log out and log back in (or restart) to apply theme changes"
     print_info "  2. Open GNOME Extensions app to install additional extensions"
     print_info "  3. Set a custom dark wallpaper from Settings > Appearance"
-    print_info "  4. Configure Powerlevel10k colors to match your terminal theme"
+    print_info "  4. Configure Starship colors to match your terminal theme (optional)"
 }
 
 # Run main function

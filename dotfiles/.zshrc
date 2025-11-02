@@ -2,18 +2,8 @@
 # Path to Oh My Zsh installation
 export ZSH="$HOME/.oh-my-zsh"
 
-# ============================================================================
-# Powerlevel10k Instant Prompt
-# ============================================================================
-
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# This must be loaded BEFORE Oh My Zsh is sourced.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
-fi
-
-# Theme - Powerlevel10k
-ZSH_THEME="powerlevel10k/powerlevel10k"
+# Theme - Oh My Zsh uses no theme (Starship handles the prompt)
+ZSH_THEME=""
 
 # Plugins
 plugins=(
@@ -118,12 +108,17 @@ if command -v fzf &> /dev/null; then
 fi
 
 # ============================================================================
-# Powerlevel10k Configuration
+# Starship Prompt Configuration
 # ============================================================================
 
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-# This should be loaded AFTER Oh My Zsh is sourced.
-[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+# Initialize Starship prompt (fast, customizable, written in Rust)
+# Starship will handle the prompt display
+if command -v starship &> /dev/null; then
+    eval "$(starship init zsh)"
+else
+    # Fallback prompt if Starship is not installed
+    PROMPT='%F{blue}%n@%m%f:%F{green}%~%f$ '
+fi
 
 # ============================================================================
 # Utility Functions

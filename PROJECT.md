@@ -29,7 +29,7 @@ dotfiles/
 ├── scripts/                  # Installation scripts (executed in order)
 │   ├── common.sh            # Shared functions (downloads, connectivity, sudo management)
 │   ├── 01-essentials.sh     # System tools, build essentials, CLI tools
-│   ├── 02-shell.sh          # Zsh + Oh My Zsh + Powerlevel10k + plugins
+│   ├── 02-shell.sh          # Zsh + Oh My Zsh + Starship + plugins
 │   ├── 03-nodejs.sh         # NVM + Node.js LTS + global npm packages
 │   ├── 04-editors.sh         # VS Code + Cursor (always installed)
 │   ├── 05-docker.sh          # Docker Engine (always installed)
@@ -199,7 +199,7 @@ fi
 
 ### 02-shell.sh
 
-**Purpose**: Set up modern Zsh shell environment with Oh My Zsh framework.
+**Purpose**: Set up modern Zsh shell environment with Oh My Zsh framework and Starship prompt.
 
 **Installs**:
 
@@ -209,14 +209,14 @@ fi
   - `zsh-autosuggestions` (from zsh-users/zsh-autosuggestions)
   - `zsh-syntax-highlighting` (from zsh-users/zsh-syntax-highlighting)
   - Built-in: `git`, `docker`, `node`
-- **Theme**: `powerlevel10k` (from romkatv/powerlevel10k)
+- **Starship**: Modern, fast, customizable prompt (written in Rust) - installed via official installer script
 
 **Configuration**:
 
 - Creates project directory: `~/www/personal/`
 - Symlinks dotfiles from `dotfiles/` to `~/`
 - Copies Git configuration file (`.gitconfig-my`) to home (not symlinked, so it can be customized)
-- Automatically configures Powerlevel10k theme with pre-configured settings
+- Automatically initializes Starship prompt in `.zshrc`
 - Backs up existing files with `.backup` suffix
 - Sets Zsh as default shell (`chsh -s $(which zsh)`)
 
@@ -229,9 +229,8 @@ fi
 **Files copied** (not symlinked, so they can be customized):
 
 - `dotfiles/.gitconfig-my` → `~/.gitconfig-my` (for personal projects)
-- `dotfiles/.p10k.zsh` → `~/.p10k.zsh` (Powerlevel10k configuration - pre-configured with Pure style)
 
-**Idempotency**: Checks for `.oh-my-zsh` directory, plugin directories, existing project directories, existing Git config files, and Powerlevel10k configuration
+**Idempotency**: Checks for `.oh-my-zsh` directory, plugin directories, Starship binary (`command -v starship`), existing project directories, and existing Git config files
 
 ---
 
@@ -545,7 +544,7 @@ fi
 
 - Oh My Zsh initialization
 - Plugin configuration (autosuggestions, syntax-highlighting)
-- Powerlevel10k theme setup
+- Starship prompt initialization (fast, customizable prompt written in Rust)
 - NVM initialization (loads NVM in interactive shells)
 - SDKMAN initialization (loads SDKMAN in interactive shells)
 - Editor set to `nano` (EDITOR and VISUAL variables)
@@ -783,7 +782,8 @@ When helping with this project:
 | Java (SDKMAN)       | 8, 11, 17, 21 LTS        | SDKMAN (Temurin)     | `sdk update && sdk install java <version>`                                         |
 | Android Studio      | Latest stable            | Snap/Google          | `snap refresh android-studio` or manual download                                   |
 | Oh My Zsh           | Latest                   | GitHub               | `omz update`                                                                       |
-| Shell plugins       | Latest                   | GitHub               | `git pull` in plugin directories                                                   |
+| Shell plugins       | Latest                   | GitHub               | `git pull` in plugin directories                                                  |
+| Starship            | Latest                   | Official installer   | `curl -fsSL https://starship.rs/install.sh \| sh`                                  |
 
 ---
 
@@ -839,7 +839,7 @@ All core components implemented:
 - **Node.js Releases**: https://nodejs.org/en/about/releases/
 - **NVM**: https://github.com/nvm-sh/nvm
 - **Oh My Zsh**: https://ohmyz.sh/
-- **Powerlevel10k**: https://github.com/romkatv/powerlevel10k
+- **Starship**: https://starship.rs/ - The minimal, blazing-fast, and infinitely customizable prompt
 - **Docker Docs**: https://docs.docker.com/
 - **SDKMAN**: https://sdkman.io/
 - **Android Studio**: https://developer.android.com/studio

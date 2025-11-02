@@ -11,7 +11,7 @@ Automated setup for a fresh **Zorin OS** machine. Run **one command** after inst
 - 🐧 **Zorin/Ubuntu friendly** - Optimized for Ubuntu-based distributions
 - 🔁 **Idempotent** - Safe to run multiple times without breaking anything
 - 🧰 **Essential tools** - Git, curl, build-essential, modern CLI tools (ripgrep, bat, fzf)
-- 🐚 **Modern shell** - Zsh + Oh My Zsh + Powerlevel10k theme + useful plugins
+- 🐚 **Modern shell** - Zsh + Oh My Zsh + Starship prompt + useful plugins
 - � **Node.js LTS** - Via NVM with global packages (TypeScript)
 - 📝 **Code editors** - VS Code and Cursor (always installed)
 - 🐳 **Docker** - Latest stable from official repository (always installed)
@@ -85,7 +85,7 @@ DOTFILES_BRANCH=feat/visual-customization curl -fsSL https://raw.githubuserconte
   - zsh-autosuggestions (command suggestions)
   - zsh-syntax-highlighting (real-time syntax check)
   - git, docker, node (completions and helpers)
-- **Theme**: Powerlevel10k (beautiful and informative prompt)
+- **Prompt**: Starship (minimal, blazing-fast, and infinitely customizable prompt written in Rust)
 
 ### Node.js (Always Installed)
 
@@ -238,15 +238,24 @@ Personal projects in `~/www/personal/` are already configured with:
 
 If you need to add work projects later, you can create a new config file (e.g., `~/.gitconfig-work`) and add an `includeIf` entry in `~/.gitconfig` pointing to it.
 
-### 3. Powerlevel10k Theme
+### 3. Starship Prompt
 
-Powerlevel10k is already pre-configured and ready to use! The prompt will work immediately after restarting your terminal.
+Starship is already installed and configured! The prompt will work immediately after restarting your terminal.
 
-To customize it later, run:
+Starship is a minimal, blazing-fast, and infinitely customizable prompt that works with any shell.
+
+To customize Starship, create a configuration file:
 
 ```bash
-p10k configure
+# Generate default config (optional)
+mkdir -p ~/.config
+starship preset nerd-font-symbols > ~/.config/starship.toml
+
+# Or edit the config manually
+nano ~/.config/starship.toml
 ```
+
+For more customization options, visit: https://starship.rs/config/
 
 ### 4. (Optional) Authenticate GitHub CLI
 
@@ -350,7 +359,9 @@ omz update
 # Update plugins manually
 cd ~/.oh-my-zsh/custom/plugins/zsh-autosuggestions && git pull
 cd ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting && git pull
-cd ~/.oh-my-zsh/custom/themes/powerlevel10k && git pull
+
+# Update Starship
+curl -fsSL https://starship.rs/install.sh | sh
 ```
 
 ### Update Docker
@@ -625,7 +636,7 @@ MIT - Use freely, modify as needed.
 Built with these amazing tools:
 
 - [Oh My Zsh](https://ohmyz.sh/)
-- [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
+- [Starship](https://starship.rs/) - The minimal, blazing-fast, and infinitely customizable prompt
 - [NVM](https://github.com/nvm-sh/nvm)
 - [SDKMAN](https://sdkman.io/)
 - [Docker](https://www.docker.com/)
